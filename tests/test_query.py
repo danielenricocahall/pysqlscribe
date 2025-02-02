@@ -1,7 +1,7 @@
-from pyquerybuilder.query import Query, MySQLQueryBuilder
+from pyquerybuilder.query import QueryRegistry
 
 
-def test_query_builder():
-    query = Query("mysql")
-    query.select("test_field").from_("test_table")
-    assert isinstance(query._builder, (MySQLQueryBuilder, ))
+def test_simple_select_query():
+    query_builder = QueryRegistry.get_builder("mysql")
+    query = query_builder.select("test_field").from_("test_table").build()
+    assert query == "SELECT test_field FROM test_table"
