@@ -13,10 +13,14 @@ def test_select_query(fields):
     assert query == f"SELECT {','.join(fields)} FROM test_table"
 
 
-def test_select_query_with_limit():
-    query_builder = QueryRegistry.get_builder("mysql")
+@pytest.mark.parametrize(
+    "dialect,syntax",
+    [("mysql", "LIMIT {limit}"), ("oracle", "FETCH NEXT {limit} ROWS ONLY")],
+)
+def test_select_query_with_limit(dialect, syntax):
+    query_builder = QueryRegistry.get_builder(dialect)
     query = query_builder.select("test_field").from_("test_table").limit(10).build()
-    assert query == "SELECT test_field FROM test_table LIMIT 10"
+    assert query == f"SELECT test_field FROM test_table {syntax.format(limit=10)}"
 
 
 def test_select_query_with_order_by():

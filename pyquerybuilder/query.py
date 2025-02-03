@@ -110,6 +110,11 @@ class LimitNode(Node):
         return f"{LIMIT} {self.state['limit']}"
 
 
+class FetchNextNode(LimitNode):
+    def __str__(self):
+        return f"FETCH NEXT {self.state['limit']} ROWS ONLY"
+
+
 class Query(ABC):
     node: Node | None = None
 
@@ -171,3 +176,11 @@ class QueryRegistry:
 
 @QueryRegistry.register("mysql")
 class MySQLQuery(Query): ...
+
+
+@QueryRegistry.register("oracle")
+class OracleQuery(Query):
+    def limit(self, n: int | str):
+        self.node.add(FetchNextNode({"limit": int(n)}))
+        self.node = self.node = self.node.next_
+        return self
