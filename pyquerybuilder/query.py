@@ -9,21 +9,18 @@ FROM = "FROM"
 WHERE = "WHERE"
 LIMIT = "LIMIT"
 JOIN = "JOIN"
+ORDER_BY = "ORDER BY"
 VALID_IDENTIFIER_REGEX = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
 
 def reconcile_args_into_string(*args) -> str:
-    if len(args) == 1:
-        arg = args[0]
-        if isinstance(arg, str):
-            fields = arg
-        elif isinstance(arg, Sequence):
-            fields = ",".join(arg)
-        else:
-            raise Exception("Invalid argument type")
+    arg = args[0]
+    if isinstance(arg, str):
+        fields = arg
+    elif isinstance(arg, Sequence):
+        fields = ",".join(arg)
     else:
-        fields = ",".join(args)
-
+        raise Exception("Invalid argument type")
     for field in fields.split(","):
         field = field.strip()
         if not VALID_IDENTIFIER_REGEX.match(field):
@@ -65,7 +62,7 @@ class SelectNode(Node):
 class FromNode(Node):
     @property
     def valid_next_nodes(self):
-        return JoinNode, WhereNode, GroupByNode, OrderByNode
+        return JoinNode, WhereNode, GroupByNode, OrderByNode, LimitNode
 
     def __str__(self):
         return f"{FROM} {self.state['tables']}"
@@ -74,7 +71,7 @@ class FromNode(Node):
 class WhereNode(Node):
     @property
     def valid_next_nodes(self):
-        return JoinNode, GroupByNode, OrderByNode
+        return JoinNode, GroupByNode, OrderByNode, LimitNode
 
     def __str__(self):
         return f"{WHERE} {self.state['condition']}"
@@ -83,7 +80,7 @@ class WhereNode(Node):
 class JoinNode(Node):
     @property
     def valid_next_nodes(self):
-        return GroupByNode, OrderByNode
+        return GroupByNode, OrderByNode, LimitNode
 
     def __str__(self):
         return f"{JOIN} {self.state['fields']}"
@@ -100,10 +97,17 @@ class OrderByNode(Node):
     def valid_next_nodes(self):
         return LimitNode
 
+    def __str__(self):
+        return f"{ORDER_BY} {self.state['fields']}"
+
 
 class LimitNode(Node):
+    @property
+    def valid_next_nodes(self):
+        return ()
+
     def __str__(self):
-        return f"{LIMIT} {self.state['condition']}"
+        return f"{LIMIT} {self.state['limit']}"
 
 
 class Query(ABC):
@@ -124,7 +128,17 @@ class Query(ABC):
         self.node = self.node.next_
         return self
 
-    def build(self) -> str:
+    def order_by(self, *args) -> Self:
+        self.node.add(OrderByNode({"fields": reconcile_args_into_string(args)}))
+        self.node = self.node.next_
+        return self
+
+    def limit(self, n: int | str):
+        self.node.add(LimitNode({"limit": int(n)}))
+        self.node = self.node = self.node.next_
+        return self
+
+    def build(self, clear: bool = True) -> str:
         node = self.node
         query = ""
         while True:
@@ -132,6 +146,10 @@ class Query(ABC):
             node = node.prev_
             if node is None:
                 break
+        if clear:
+            # we provide an option to not clear the builder in the event the developer needs
+            # to debug or needs to reuse the value. By default, we do immediately after building the query
+            self.node = None
         return query.strip()
 
 
