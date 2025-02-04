@@ -103,3 +103,17 @@ uv run pytest
 ```
 
 Unit tests are executed as part of CI, and the behavior should be consistent with what is observed in local development.
+
+
+# Supported Dialects
+For the `Query` API only. This is anticipated to grow, also there are certainly operations that are missing within dialects.
+- [X] `MySQL`
+- [X] `Oracle`
+- [ ] `Postgres`
+
+
+# TODO
+- [ ] Propagate dialect information to `Table`
+- [ ] Support `JOIN`s
+- [ ] Support `WHERE` clause
+- [ ] Add more dialects
