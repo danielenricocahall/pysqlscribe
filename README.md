@@ -115,5 +115,4 @@ For the `Query` API only. This is anticipated to grow, also there are certainly 
 # TODO
 - [ ] Propagate dialect information to `Table`
 - [ ] Support `JOIN`s
-- [ ] Support `WHERE` clause
 - [ ] Add more dialects

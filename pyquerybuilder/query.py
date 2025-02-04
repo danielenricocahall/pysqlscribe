@@ -1,4 +1,6 @@
+import operator
 from abc import abstractmethod, ABC
+from functools import reduce
 from typing import Any, Dict, Self, Callable, Sequence, Tuple
 
 from pyquerybuilder.regex_patterns import VALID_IDENTIFIER_REGEX
@@ -7,8 +9,8 @@ SELECT = "SELECT"
 FROM = "FROM"
 WHERE = "WHERE"
 LIMIT = "LIMIT"
-JOIN = "JOIN"
 ORDER_BY = "ORDER BY"
+AND = "AND"
 
 
 def reconcile_args_into_string(*args) -> str:
@@ -60,7 +62,7 @@ class SelectNode(Node):
 class FromNode(Node):
     @property
     def valid_next_nodes(self):
-        return JoinNode, WhereNode, GroupByNode, OrderByNode, LimitNode
+        return WhereNode, GroupByNode, OrderByNode, LimitNode
 
     def __str__(self):
         return f"{FROM} {self.state['tables']}"
@@ -69,19 +71,17 @@ class FromNode(Node):
 class WhereNode(Node):
     @property
     def valid_next_nodes(self):
-        return JoinNode, GroupByNode, OrderByNode, LimitNode
+        return GroupByNode, OrderByNode, LimitNode, WhereNode
 
     def __str__(self):
-        return f"{WHERE} {self.state['condition']}"
+        return f"{WHERE} {self.state['conditions']}"
 
-
-class JoinNode(Node):
-    @property
-    def valid_next_nodes(self):
-        return GroupByNode, OrderByNode, LimitNode
-
-    def __str__(self):
-        return f"{JOIN} {self.state['fields']}"
+    def __and__(self, other):
+        if isinstance(other, WhereNode):
+            compound_condition = (
+                f"{self.state['conditions']} {AND} {other.state['conditions']}"
+            )
+            return WhereNode({"conditions": compound_condition})
 
 
 class GroupByNode(Node):
@@ -127,7 +127,10 @@ class Query(ABC):
         return self
 
     def where(self, *args) -> Self:
-        self.node.add(WhereNode({"conditions": args}))
+        where_node = reduce(
+            operator.and_, map(lambda arg: WhereNode({"conditions": arg}), args)
+        )
+        self.node.add(where_node)
         self.node = self.node.next_
         return self
 

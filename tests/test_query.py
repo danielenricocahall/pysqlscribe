@@ -35,3 +35,17 @@ def test_select_query_with_order_by():
         query
         == "SELECT test_field,another_test_field FROM test_table ORDER BY test_field"
     )
+
+
+def test_where_clause():
+    query_builder = QueryRegistry.get_builder("mysql")
+    query = (
+        query_builder.select("test_field", "another_test_field")
+        .from_("test_table")
+        .where("test_field = 1", "another_test_field > 2")
+        .build()
+    )
+    assert (
+        query
+        == "SELECT test_field,another_test_field FROM test_table WHERE test_field = 1 AND another_test_field > 2"
+    )
