@@ -10,7 +10,8 @@ from pyquerybuilder.query import QueryRegistry
 def test_select_query(fields):
     query_builder = QueryRegistry.get_builder("mysql")
     query = query_builder.select(*fields).from_("test_table").build()
-    assert query == f"SELECT {','.join(fields)} FROM test_table"
+    fields = [query_builder.escape_identifier(identifier) for identifier in fields]
+    assert query == f"SELECT {','.join(fields)} FROM `test_table`"
 
 
 @pytest.mark.parametrize(
@@ -20,7 +21,10 @@ def test_select_query(fields):
 def test_select_query_with_limit(dialect, syntax):
     query_builder = QueryRegistry.get_builder(dialect)
     query = query_builder.select("test_field").from_("test_table").limit(10).build()
-    assert query == f"SELECT test_field FROM test_table {syntax.format(limit=10)}"
+    assert (
+        query
+        == f"SELECT {query_builder.escape_identifier('test_field')} FROM {query_builder.escape_identifier('test_table')} {syntax.format(limit=10)}"
+    )
 
 
 def test_select_query_with_order_by():
@@ -33,7 +37,7 @@ def test_select_query_with_order_by():
     )
     assert (
         query
-        == "SELECT test_field,another_test_field FROM test_table ORDER BY test_field"
+        == "SELECT `test_field`,`another_test_field` FROM `test_table` ORDER BY `test_field`"
     )
 
 
@@ -47,5 +51,5 @@ def test_where_clause():
     )
     assert (
         query
-        == "SELECT test_field,another_test_field FROM test_table WHERE test_field = 1 AND another_test_field > 2"
+        == "SELECT `test_field`,`another_test_field` FROM `test_table` WHERE test_field = 1 AND another_test_field > 2"
     )

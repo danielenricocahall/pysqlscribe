@@ -35,3 +35,9 @@ class Table(Query):
             raise InvalidFieldsException(
                 f"Table {self.name} doesn't have one or more of the fields provided"
             )
+
+    def escape_identifier(self, identifier: str):
+        # TODO: this is a hack for now, until we can propagate the dialect information
+        # to the Table, either through dynamic creation of Table classes which inherit
+        # from the corresponding Query class or some other means e.g; making it another argument
+        return identifier

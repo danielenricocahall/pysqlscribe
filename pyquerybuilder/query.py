@@ -1,7 +1,7 @@
 import operator
 from abc import abstractmethod, ABC
 from functools import reduce
-from typing import Any, Dict, Self, Callable, Sequence, Tuple
+from typing import Any, Dict, Self, Callable, Tuple
 
 from pyquerybuilder.regex_patterns import VALID_IDENTIFIER_REGEX
 
@@ -13,19 +13,16 @@ ORDER_BY = "ORDER BY"
 AND = "AND"
 
 
-def reconcile_args_into_string(*args) -> str:
+def reconcile_args_into_string(*args, escape_identifier: Callable[[str], str]) -> str:
     arg = args[0]
     if isinstance(arg, str):
-        fields = arg
-    elif isinstance(arg, Sequence):
-        fields = ",".join(arg)
-    else:
-        raise Exception("Invalid argument type")
-    for field in fields.split(","):
-        field = field.strip()
-        if not VALID_IDENTIFIER_REGEX.match(field):
-            raise ValueError(f"Invalid SQL identifier: {field}")
-    return fields
+        arg = [arg]
+    for identifier in arg:
+        identifier = identifier.strip()
+        if not VALID_IDENTIFIER_REGEX.match(identifier):
+            raise ValueError(f"Invalid SQL identifier: {identifier}")
+    identifiers = [escape_identifier(identifier) for identifier in arg]
+    return ",".join(identifiers)
 
 
 class InvalidNodeException(Exception): ...
@@ -118,11 +115,25 @@ class Query(ABC):
 
     def select(self, *args) -> Self:
         if not self.node:
-            self.node = SelectNode({"fields": reconcile_args_into_string(args)})
+            self.node = SelectNode(
+                {
+                    "fields": reconcile_args_into_string(
+                        args, escape_identifier=self.escape_identifier
+                    )
+                }
+            )
         return self
 
     def from_(self, *args) -> Self:
-        self.node.add(FromNode({"tables": reconcile_args_into_string(args)}))
+        self.node.add(
+            FromNode(
+                {
+                    "tables": reconcile_args_into_string(
+                        args, escape_identifier=self.escape_identifier
+                    )
+                }
+            )
+        )
         self.node = self.node.next_
         return self
 
@@ -135,7 +146,15 @@ class Query(ABC):
         return self
 
     def order_by(self, *args) -> Self:
-        self.node.add(OrderByNode({"fields": reconcile_args_into_string(args)}))
+        self.node.add(
+            OrderByNode(
+                {
+                    "fields": reconcile_args_into_string(
+                        args, escape_identifier=self.escape_identifier
+                    )
+                }
+            )
+        )
         self.node = self.node.next_
         return self
 
@@ -161,6 +180,9 @@ class Query(ABC):
     def __str__(self):
         return self.build(clear=False)
 
+    @abstractmethod
+    def escape_identifier(self, identifier: str): ...
+
 
 class QueryRegistry:
     builders: Dict[str, Query] = {}
@@ -179,11 +201,16 @@ class QueryRegistry:
 
 
 @QueryRegistry.register("mysql")
-class MySQLQuery(Query): ...
+class MySQLQuery(Query):
+    def escape_identifier(self, identifier: str) -> str:
+        return f"`{identifier}`"
 
 
 @QueryRegistry.register("oracle")
 class OracleQuery(Query):
+    def escape_identifier(self, identifier: str) -> str:
+        return f'"{identifier}"'
+
     def limit(self, n: int | str):
         self.node.add(FetchNextNode({"limit": int(n)}))
         self.node = self.node = self.node.next_
