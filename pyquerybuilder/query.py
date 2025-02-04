@@ -1,8 +1,7 @@
-""" """
-
-import re
 from abc import abstractmethod, ABC
 from typing import Any, Dict, Self, Callable, Sequence, Tuple
+
+from pyquerybuilder.regex_patterns import VALID_IDENTIFIER_REGEX
 
 SELECT = "SELECT"
 FROM = "FROM"
@@ -10,7 +9,6 @@ WHERE = "WHERE"
 LIMIT = "LIMIT"
 JOIN = "JOIN"
 ORDER_BY = "ORDER BY"
-VALID_IDENTIFIER_REGEX = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
 
 def reconcile_args_into_string(*args) -> str:
@@ -156,6 +154,9 @@ class Query(ABC):
             # to debug or needs to reuse the value. By default, we do immediately after building the query
             self.node = None
         return query.strip()
+
+    def __str__(self):
+        return self.build(clear=False)
 
 
 class QueryRegistry:
