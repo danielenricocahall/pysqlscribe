@@ -218,9 +218,7 @@ class OracleQuery(Query):
         return self
 
 
-QueryRegistry.register("postgres")
-
-
+@QueryRegistry.register("postgres")
 class PostgreSQLQuery(Query):
     def escape_identifier(self, identifier: str) -> str:
         return f'"{identifier}"'
