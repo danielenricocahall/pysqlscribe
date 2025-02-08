@@ -119,10 +119,11 @@ Unit tests are executed as part of CI, and the behavior should be consistent wit
 This is anticipated to grow, also there are certainly operations that are missing within dialects.
 - [X] `MySQL`
 - [X] `Oracle`
-- [ ] `Postgres`
+- [X] `Postgres`
+- [X] `Sqlite`
 
 
 # TODO
-- [ ] Propagate dialect information to `Table`
 - [ ] Support `JOIN`s
 - [ ] Add more dialects
+- [ ] Support `OFFSET` for Oracle

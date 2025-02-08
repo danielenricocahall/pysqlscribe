@@ -27,6 +27,21 @@ def test_select_query_with_limit(dialect, syntax):
     )
 
 
+def test_select_query_with_limit_and_offset():
+    query_builder = QueryRegistry.get_builder("postgres")
+    query = (
+        query_builder.select("test_field")
+        .from_("test_table")
+        .limit(10)
+        .offset(5)
+        .build()
+    )
+    assert (
+        query
+        == f"SELECT {query_builder.escape_identifier('test_field')} FROM {query_builder.escape_identifier('test_table')} LIMIT 10 OFFSET 5"
+    )
+
+
 def test_select_query_with_order_by():
     query_builder = QueryRegistry.get_builder("mysql")
     query = (

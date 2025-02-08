@@ -12,6 +12,7 @@ LIMIT = "LIMIT"
 ORDER_BY = "ORDER BY"
 AND = "AND"
 FETCH_NEXT = "FETCH NEXT"
+OFFSET = "OFFSET"
 
 
 def reconcile_args_into_string(*args, escape_identifier: Callable[[str], str]) -> str:
@@ -100,15 +101,28 @@ class OrderByNode(Node):
 class LimitNode(Node):
     @property
     def valid_next_nodes(self):
-        return ()
+        return OffsetNode
 
     def __str__(self):
         return f"{LIMIT} {self.state['limit']}"
 
 
 class FetchNextNode(LimitNode):
+    @property
+    def valid_next_nodes(self):
+        return ()
+
     def __str__(self):
         return f"{FETCH_NEXT} {self.state['limit']} ROWS ONLY"
+
+
+class OffsetNode(Node):
+    @property
+    def valid_next_nodes(self):
+        return ()
+
+    def __str__(self):
+        return f"{OFFSET} {self.state['offset']}"
 
 
 class Query(ABC):
@@ -161,6 +175,11 @@ class Query(ABC):
 
     def limit(self, n: int | str):
         self.node.add(LimitNode({"limit": int(n)}))
+        self.node = self.node = self.node.next_
+        return self
+
+    def offset(self, n: int | str):
+        self.node.add(OffsetNode({"offset": int(n)}))
         self.node = self.node = self.node.next_
         return self
 
