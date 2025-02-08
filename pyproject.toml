@@ -1,13 +1,15 @@
 [project]
 name = "sqlscribe"
-version = "0.0.1"
+version = "0.0.2"
 description = "A simple Python Library for building relational database queries using objects"
 readme = "README.md"
 authors = [{ name="Daniel Cahall", email="danielenricocahall@gmail.com" }]
 requires-python = ">=3.10"
 dependencies = []
-homepage = "https://github.com/danielenricocahall/sqlscribe"
-license = "MIT"
+license-files = ["LICENSE"]
+
+[project.urls]
+"Source code" = "https://github.com/danielenricocahall/sqlscribe"
 
 [tool.uv]
 
