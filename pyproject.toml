@@ -1,7 +1,7 @@
 [project]
 name = "pyquerybuilder"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.0.1"
+description = "A simple Python Library for building relational database queries using objects"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = []

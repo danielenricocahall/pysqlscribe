@@ -5,7 +5,7 @@ This is `pyquerybuilder`, the Python library intended to make building SQL queri
 
 
 # Motivation
-Other query building libraries, such as [pypika](https://github.com/kayak/pypika) are fantastic but not actively maintained. 
+Other query building libraries, such as [pypika](https://github.com/kayak/pypika) are fantastic but not actively maintained. Some ORM libraries such as `sqlalchemy` offer similar (and awesome) capabilities using the core API, but if you're not already using the library in your application, it's a bit of a large dependency to introduce for the purposes of query building.
 
 
 # API
