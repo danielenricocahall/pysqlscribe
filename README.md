@@ -32,7 +32,7 @@ query = query_builder.select("test_field", "another_test_field").from_("test_tab
 ```
 
 
-Furthermore, if there are any dialects that we currently don't support, you can create your own by subclassing `Query` (and optionally registering it with the `QueryRegistry`):
+Furthermore, if there are any dialects that we currently don't support, you can create your own by subclassing `Query` and registering it with the `QueryRegistry`:
 
 ```python
 from pyquerybuilder.query import QueryRegistry, Query
@@ -46,27 +46,37 @@ class CustomQuery(Query):
 An alternative method for building queries is through the `Table` object:
 
 ```python
-from pyquerybuilder.table import Table
-table = Table("test_table", "test_field", "another_test_field")
+from pyquerybuilder.table import MySQLTable
+table = MySQLTable("test_table", "test_field", "another_test_field")
 query = table.select("test_field").build()
 ```
 
 A schema for the table can also be provided as a keyword argument, after the columns/fields:
 
 ```python
-from pyquerybuilder.table import Table
-table = Table("test_table", "test_field", "another_test_field", schema="test_schema")
+from pyquerybuilder.table import MySQLTable
+table = MySQLTable("test_table", "test_field", "another_test_field", schema="test_schema")
 query = table.select("test_field").build()
 ```
 
 Additionally, in the event an invalid field is provided in the `select` call, we will raise an exception:
 
 ```python
-from pyquerybuilder.table import Table
+from pyquerybuilder.table import MySQLTable
 
-table = Table("test_table", "test_field", "another_test_field")
+table = MySQLTable("test_table", "test_field", "another_test_field")
 table.select("some_nonexistent_field") # will raise InvalidFieldsException
 ```
+
+`Table` also offers a `create` method in the event you've added a new dialect which doesn't have an associated `Table` implementation, or if you need to change it for different environments (e.g; `sqlite` for local development, `mysql`/`postgres`/`oracle`/etc. for deployment):
+
+```python
+from pyquerybuilder.table import Table
+new_dialect_table_class = Table.create("new-dialect") # assuming you've registered "new-dialect" with the `QueryRegistry`
+table = new_dialect_table_class("test_table", "test_field", "another_test_field")
+```
+
+
 
 ## Schema
 For associating multiple `Table`s with a single schema, you can use the `Schema`:
@@ -106,7 +116,7 @@ Unit tests are executed as part of CI, and the behavior should be consistent wit
 
 
 # Supported Dialects
-For the `Query` API only. This is anticipated to grow, also there are certainly operations that are missing within dialects.
+This is anticipated to grow, also there are certainly operations that are missing within dialects.
 - [X] `MySQL`
 - [X] `Oracle`
 - [ ] `Postgres`

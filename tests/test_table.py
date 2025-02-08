@@ -1,6 +1,6 @@
 import pytest
 
-from pyquerybuilder.table import InvalidFieldsException, MySQLTable
+from pyquerybuilder.table import InvalidFieldsException, MySQLTable, OracleTable, Table
 
 
 def test_table_select():
@@ -25,3 +25,13 @@ def test_table_with_schema():
         query
         == "SELECT `test_field`,`another_test_field` FROM `test_schema.test_table`"
     )
+
+
+def test_create_existing_table_type():
+    oracle_table_class = Table.create("oracle")
+    assert oracle_table_class == OracleTable
+
+
+def test_create_invalid_dialect():
+    with pytest.raises(ValueError):
+        Table.create("non-existent-dialect")

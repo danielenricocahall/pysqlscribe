@@ -11,6 +11,8 @@ class InvalidTableNameException(Exception): ...
 
 
 class Table(ABC):
+    __cache: dict[str, type["Table"]] = {}
+
     def __init__(self, name: str, *fields, schema: str | None = None):
         self.name = name
         for field in fields:
@@ -21,6 +23,11 @@ class Table(ABC):
     def create(cls, dialect: str):
         if dialect not in QueryRegistry.builders:
             raise ValueError(f"Unsupported dialect: {dialect}")
+
+        class_name = f"{dialect.capitalize()}Table"
+
+        if class_name in cls.__cache:
+            return cls.__cache[class_name]
 
         query_class = QueryRegistry.get_builder(dialect).__class__
 
@@ -39,8 +46,8 @@ class Table(ABC):
                     )
 
         # Set a meaningful class name
-        class_name = f"{dialect.capitalize()}Table"
         DynamicTable.__name__ = class_name
+        cls.__cache[class_name] = DynamicTable
 
         return DynamicTable
 
