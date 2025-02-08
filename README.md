@@ -76,15 +76,13 @@ new_dialect_table_class = Table.create("new-dialect") # assuming you've register
 table = new_dialect_table_class("test_table", "test_field", "another_test_field")
 ```
 
-
-
 ## Schema
 For associating multiple `Table`s with a single schema, you can use the `Schema`:
 
 ```python
 from pyquerybuilder.schema import Schema
 
-schema = Schema("test_schema", tables=["test_table", "another_test_table"])
+schema = Schema("test_schema", tables=["test_table", "another_test_table"], dialect="postgres")
 schema.tables # a list of two `Table` objects
 ```
 
@@ -95,6 +93,37 @@ from pyquerybuilder.table import PostgresTable
 table = PostgresTable("test_table", schema="test_schema")
 another_table = PostgresTable("another_test_table", schema="test_schema")
 ```
+
+Instead of supplying a `dialect` directly to `Schema`, you can also set the environment variable `PYQUERY_BUILDER_DIALECT`:
+
+```shell
+export PYQUERY_BUILDER_DIALECT = 'postgres'
+```
+
+```python
+from pyquerybuilder.schema import Schema
+
+schema = Schema("test_schema", tables=["test_table", "another_test_table"])
+schema.tables # a list of two `PostgresTable` objects
+```
+
+Alternatively, if you already have existing `Table` objects you want to associate with the schema, you can supply them directly (in this case, `dialect` is not needed):
+```python
+from pyquerybuilder.schema import Schema
+from pyquerybuilder.table import PostgresTable
+
+table = PostgresTable("test_table")
+another_table = PostgresTable("another_test_table")
+schema = Schema("test_schema", [table, another_table])
+```
+
+
+`Schema` also has each table set as an attribute, so in the example above, you can do the following:
+
+```python
+schema.test_table # will return the supplied table object with the name `"test_table"`
+```
+
 
 # Contributions
 
