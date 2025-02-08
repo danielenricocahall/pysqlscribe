@@ -155,4 +155,4 @@ This is anticipated to grow, also there are certainly operations that are missin
 # TODO
 - [ ] Support `JOIN`s
 - [ ] Add more dialects
-- [ ] Support `OFFSET` for Oracle
+- [ ] Support `OFFSET` for Oracle and SQLServer
