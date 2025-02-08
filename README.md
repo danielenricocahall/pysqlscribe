@@ -91,9 +91,9 @@ schema.tables # a list of two `Table` objects
 This is functionally equivalent to:
 
 ```python
-from pyquerybuilder.table import Table
-table = Table("test_table", schema="test_schema")
-another_table = Table("another_test_table", schema="test_schema")
+from pyquerybuilder.table import PostgresTable
+table = PostgresTable("test_table", schema="test_schema")
+another_table = PostgresTable("another_test_table", schema="test_schema")
 ```
 
 # Contributions

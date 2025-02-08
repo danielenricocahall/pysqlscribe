@@ -1,11 +1,22 @@
 from pyquerybuilder.schema import Schema
-from pyquerybuilder.table import Table, OracleTable
+from pyquerybuilder.table import Table, OracleTable, PostgresTable, SqliteTable
 
 
 def test_schema_create_tables():
+    schema = Schema(
+        "test_schema", ["test_table", "another_test_table"], dialect="postgres"
+    )
+    assert len(schema.tables) == 2
+    assert all(isinstance(table, PostgresTable) for table in schema.tables)
+    assert all(table.name.startswith("test_schema") for table in schema.tables)
+    assert hasattr(schema, "test_table")
+
+
+def test_schema_dialect_environment_provided(monkeypatch):
+    monkeypatch.setenv("PYQUERY_BUILDER_DIALECT", "sqlite")
     schema = Schema("test_schema", ["test_table", "another_test_table"])
     assert len(schema.tables) == 2
-    assert all(isinstance(table, Table) for table in schema.tables)
+    assert all(isinstance(table, SqliteTable) for table in schema.tables)
     assert all(table.name.startswith("test_schema") for table in schema.tables)
     assert hasattr(schema, "test_table")
 
