@@ -76,6 +76,21 @@ new_dialect_table_class = Table.create("new-dialect") # assuming you've register
 table = new_dialect_table_class("test_table", "test_field", "another_test_field")
 ```
 
+You can overwrite the original fields supplied to a `Table` as well, which will delete the old attributes and set new ones:
+
+```python
+from pyquerybuilder.table import MySQLTable
+
+table = MySQLTable("test_table", "test_field", "another_test_field")
+table.test_field # valid
+table.fields = ['new_test_field']
+table.select("new_test_field")
+table.new_test_field # now valid - but `table.test_field` is not anymore
+```
+
+
+
+
 ## Schema
 For associating multiple `Table`s with a single schema, you can use the `Schema`:
 
