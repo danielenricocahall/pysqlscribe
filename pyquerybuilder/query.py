@@ -11,6 +11,7 @@ WHERE = "WHERE"
 LIMIT = "LIMIT"
 ORDER_BY = "ORDER BY"
 AND = "AND"
+FETCH_NEXT = "FETCH NEXT"
 
 
 def reconcile_args_into_string(*args, escape_identifier: Callable[[str], str]) -> str:
@@ -107,7 +108,7 @@ class LimitNode(Node):
 
 class FetchNextNode(LimitNode):
     def __str__(self):
-        return f"FETCH NEXT {self.state['limit']} ROWS ONLY"
+        return f"{FETCH_NEXT} {self.state['limit']} ROWS ONLY"
 
 
 class Query(ABC):
