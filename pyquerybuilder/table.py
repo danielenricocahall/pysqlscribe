@@ -1,4 +1,6 @@
-from pyquerybuilder.query import Query
+from abc import ABC
+
+from pyquerybuilder.query import QueryRegistry
 from pyquerybuilder.regex_patterns import VALID_IDENTIFIER_REGEX
 
 
@@ -8,12 +10,46 @@ class InvalidFieldsException(Exception): ...
 class InvalidTableNameException(Exception): ...
 
 
-class Table(Query):
+class Table(ABC):
+    __cache: dict[str, type["Table"]] = {}
+
     def __init__(self, name: str, *fields, schema: str | None = None):
         self.name = name
         for field in fields:
             setattr(self, field, None)
         self.schema = schema
+
+    @classmethod
+    def create(cls, dialect: str):
+        if dialect not in QueryRegistry.builders:
+            raise ValueError(f"Unsupported dialect: {dialect}")
+
+        class_name = f"{dialect.capitalize()}Table"
+
+        if class_name in cls.__cache:
+            return cls.__cache[class_name]
+
+        query_class = QueryRegistry.get_builder(dialect).__class__
+
+        class DynamicTable(query_class, Table):
+            def __init__(self, name: str, *fields, schema: str | None = None):
+                query_class.__init__(self)
+                Table.__init__(self, name, *fields, schema=schema)
+
+            def select(self, *fields):
+                try:
+                    assert all(hasattr(self, field) for field in fields)
+                    return super().select(*fields).from_(self.name)
+                except AssertionError:
+                    raise InvalidFieldsException(
+                        f"Table {self.name} doesn't have one or more of the fields provided"
+                    )
+
+        # Set a meaningful class name
+        DynamicTable.__name__ = class_name
+        cls.__cache[class_name] = DynamicTable
+
+        return DynamicTable
 
     @property
     def name(self):
@@ -27,17 +63,6 @@ class Table(Query):
             raise InvalidTableNameException(f"Invalid table name {table_name}")
         self._name = table_name
 
-    def select(self, *fields):
-        try:
-            assert all(hasattr(self, field) for field in fields)
-            return super().select(*fields).from_(self.name)
-        except AssertionError:
-            raise InvalidFieldsException(
-                f"Table {self.name} doesn't have one or more of the fields provided"
-            )
 
-    def escape_identifier(self, identifier: str):
-        # TODO: this is a hack for now, until we can propagate the dialect information
-        # to the Table, either through dynamic creation of Table classes which inherit
-        # from the corresponding Query class or some other means e.g; making it another argument
-        return identifier
+MySQLTable = Table.create("mysql")
+OracleTable = Table.create("oracle")
