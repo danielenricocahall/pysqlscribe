@@ -4,7 +4,7 @@ from pysqlscribe.query import QueryRegistry
 
 @pytest.mark.parametrize(
     "fields",
-    [["test_field"], ["test_field", "another_test_field"]],
+    [["test_column"], ["test_column", "another_test_column"]],
     ids=["single field", "multiple fields"],
 )
 def test_select_query(fields):
@@ -20,17 +20,17 @@ def test_select_query(fields):
 )
 def test_select_query_with_limit(dialect, syntax):
     query_builder = QueryRegistry.get_builder(dialect)
-    query = query_builder.select("test_field").from_("test_table").limit(10).build()
+    query = query_builder.select("test_column").from_("test_table").limit(10).build()
     assert (
         query
-        == f"SELECT {query_builder.escape_identifier('test_field')} FROM {query_builder.escape_identifier('test_table')} {syntax.format(limit=10)}"
+        == f"SELECT {query_builder.escape_identifier('test_column')} FROM {query_builder.escape_identifier('test_table')} {syntax.format(limit=10)}"
     )
 
 
 def test_select_query_with_limit_and_offset():
     query_builder = QueryRegistry.get_builder("postgres")
     query = (
-        query_builder.select("test_field")
+        query_builder.select("test_column")
         .from_("test_table")
         .limit(10)
         .offset(5)
@@ -38,33 +38,33 @@ def test_select_query_with_limit_and_offset():
     )
     assert (
         query
-        == f"SELECT {query_builder.escape_identifier('test_field')} FROM {query_builder.escape_identifier('test_table')} LIMIT 10 OFFSET 5"
+        == f"SELECT {query_builder.escape_identifier('test_column')} FROM {query_builder.escape_identifier('test_table')} LIMIT 10 OFFSET 5"
     )
 
 
 def test_select_query_with_order_by():
     query_builder = QueryRegistry.get_builder("mysql")
     query = (
-        query_builder.select("test_field", "another_test_field")
+        query_builder.select("test_column", "another_test_column")
         .from_("test_table")
-        .order_by("test_field")
+        .order_by("test_column")
         .build()
     )
     assert (
         query
-        == "SELECT `test_field`,`another_test_field` FROM `test_table` ORDER BY `test_field`"
+        == "SELECT `test_column`,`another_test_column` FROM `test_table` ORDER BY `test_column`"
     )
 
 
 def test_where_clause():
     query_builder = QueryRegistry.get_builder("mysql")
     query = (
-        query_builder.select("test_field", "another_test_field")
+        query_builder.select("test_column", "another_test_column")
         .from_("test_table")
-        .where("test_field = 1", "another_test_field > 2")
+        .where("test_column = 1", "another_test_column > 2")
         .build()
     )
     assert (
         query
-        == "SELECT `test_field`,`another_test_field` FROM `test_table` WHERE test_field = 1 AND another_test_field > 2"
+        == "SELECT `test_column`,`another_test_column` FROM `test_table` WHERE test_column = 1 AND another_test_column > 2"
     )

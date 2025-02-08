@@ -6,7 +6,7 @@ from pysqlscribe.query import QueryRegistry
 from pysqlscribe.regex_patterns import VALID_IDENTIFIER_REGEX
 
 
-class InvalidFieldsException(Exception): ...
+class InvalidColumnsException(Exception): ...
 
 
 class InvalidTableNameException(Exception): ...
@@ -15,10 +15,10 @@ class InvalidTableNameException(Exception): ...
 class Table(ABC):
     __cache: dict[str, type["Table"]] = {}
 
-    def __init__(self, name: str, *fields, schema: str | None = None):
+    def __init__(self, name: str, *columns, schema: str | None = None):
         self.name = name
         self.schema = schema
-        self.fields = fields
+        self.columns = columns
 
     @classmethod
     def create(cls, dialect: str):
@@ -42,7 +42,7 @@ class Table(ABC):
                     assert all(hasattr(self, field) for field in fields)
                     return super().select(*fields).from_(self.name)
                 except AssertionError:
-                    raise InvalidFieldsException(
+                    raise InvalidColumnsException(
                         f"Table {self.name} doesn't have one or more of the fields provided"
                     )
 
@@ -65,17 +65,17 @@ class Table(ABC):
         self._name = table_name
 
     @property
-    def fields(self):
-        return self._fields
+    def columns(self):
+        return self._columns
 
-    @fields.setter
-    def fields(self, fields_: List[str]):
-        if getattr(self, "_fields", None):
-            for field in self.fields:
-                delattr(self, field)
-        self._fields = fields_
-        for field in fields_:
-            setattr(self, field, Column(field))
+    @columns.setter
+    def columns(self, columns_: List[str]):
+        if getattr(self, "_columns", None):
+            for column in self.columns:
+                delattr(self, column)
+        self._columns = columns_
+        for column_name in columns_:
+            setattr(self, column_name, Column(column_name))
 
 
 MySQLTable = Table.create("mysql")
