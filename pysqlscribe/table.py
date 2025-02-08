@@ -1,8 +1,8 @@
 from abc import ABC
 from typing import List
 
-from sqlscribe.query import QueryRegistry
-from sqlscribe.regex_patterns import VALID_IDENTIFIER_REGEX
+from pysqlscribe.query import QueryRegistry
+from pysqlscribe.regex_patterns import VALID_IDENTIFIER_REGEX
 
 
 class InvalidFieldsException(Exception): ...

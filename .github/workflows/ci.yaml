@@ -1,4 +1,4 @@
-name: SQLScribe CI
+name: PySQLScribe CI
 
 on:
   push:

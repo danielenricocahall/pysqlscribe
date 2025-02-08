@@ -3,7 +3,7 @@ from abc import abstractmethod, ABC
 from functools import reduce
 from typing import Any, Dict, Self, Callable, Tuple
 
-from sqlscribe.regex_patterns import VALID_IDENTIFIER_REGEX
+from pysqlscribe.regex_patterns import VALID_IDENTIFIER_REGEX
 
 SELECT = "SELECT"
 FROM = "FROM"

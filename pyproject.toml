@@ -1,6 +1,6 @@
 [project]
-name = "sqlscribe"
-version = "0.0.2"
+name = "pysqlscribe"
+version = "0.0.1"
 description = "A simple Python Library for building relational database queries using objects"
 readme = "README.md"
 authors = [{ name="Daniel Cahall", email="danielenricocahall@gmail.com" }]

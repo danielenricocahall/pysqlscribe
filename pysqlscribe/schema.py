@@ -1,8 +1,8 @@
 import os
 from typing import List
 
-from sqlscribe.regex_patterns import VALID_IDENTIFIER_REGEX
-from sqlscribe.table import Table
+from pysqlscribe.regex_patterns import VALID_IDENTIFIER_REGEX
+from pysqlscribe.table import Table
 
 
 class InvalidSchemaNameException(Exception): ...

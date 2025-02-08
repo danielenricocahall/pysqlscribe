@@ -1,5 +1,5 @@
-from sqlscribe.schema import Schema
-from sqlscribe.table import Table, OracleTable, PostgresTable, SqliteTable
+from pysqlscribe.schema import Schema
+from pysqlscribe.table import Table, OracleTable, PostgresTable, SqliteTable
 
 
 def test_schema_create_tables():
