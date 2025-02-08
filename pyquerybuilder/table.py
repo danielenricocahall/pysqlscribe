@@ -79,3 +79,5 @@ class Table(ABC):
 
 MySQLTable = Table.create("mysql")
 OracleTable = Table.create("oracle")
+PostgresTable = Table.create("postgres")
+SqliteTable = Table.create("sqlite")

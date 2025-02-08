@@ -216,3 +216,17 @@ class OracleQuery(Query):
         self.node.add(FetchNextNode({"limit": int(n)}))
         self.node = self.node = self.node.next_
         return self
+
+
+QueryRegistry.register("postgres")
+
+
+class PostgreSQLQuery(Query):
+    def escape_identifier(self, identifier: str) -> str:
+        return f'"{identifier}"'
+
+
+@QueryRegistry.register("sqlite")
+class SQLiteQuery(Query):
+    def escape_identifier(self, identifier: str) -> str:
+        return f'"{identifier}"'
