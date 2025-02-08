@@ -1,5 +1,5 @@
 [project]
-name = "pyquerybuilder"
+name = "sqlscribe"
 version = "0.0.1"
 description = "A simple Python Library for building relational database queries using objects"
 readme = "README.md"

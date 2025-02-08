@@ -1,8 +1,8 @@
 import os
 from typing import List
 
-from pyquerybuilder.regex_patterns import VALID_IDENTIFIER_REGEX
-from pyquerybuilder.table import Table
+from sqlscribe.regex_patterns import VALID_IDENTIFIER_REGEX
+from sqlscribe.table import Table
 
 
 class InvalidSchemaNameException(Exception): ...

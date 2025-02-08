@@ -1,5 +1,5 @@
-from pyquerybuilder.schema import Schema
-from pyquerybuilder.table import Table, OracleTable, PostgresTable, SqliteTable
+from sqlscribe.schema import Schema
+from sqlscribe.table import Table, OracleTable, PostgresTable, SqliteTable
 
 
 def test_schema_create_tables():

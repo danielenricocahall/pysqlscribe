@@ -1,5 +1,5 @@
 import pytest
-from pyquerybuilder.query import QueryRegistry
+from sqlscribe.query import QueryRegistry
 
 
 @pytest.mark.parametrize(

@@ -1,7 +1,7 @@
 # Overview
 [![Supported Versions](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11-blue)
 
-This is `pyquerybuilder`, the Python library intended to make building SQL queries in your code a bit easier!
+This is `sqlscribe`, the Python library intended to make building SQL queries in your code a bit easier!
 
 
 # Motivation
@@ -10,14 +10,14 @@ Other query building libraries, such as [pypika](https://github.com/kayak/pypika
 
 # API
 
-`pyquerybuilder` currently offers several APIs for building queries.
+`sqlscribe` currently offers several APIs for building queries.
 
 ## Query
 
 A `Query` object can be constructed using the `QueryRegistry`'s `get_builder` if you supply a valid dialect (e.g; "mysql", "postgres", "oracle). For example, "mysql" would be:
 
 ```python
-from pyquerybuilder.query import QueryRegistry
+from sqlscribe.query import QueryRegistry
 
 query_builder = QueryRegistry.get_builder("mysql")
 query = query_builder.select("test_field", "another_test_field").from_("test_table").build()
@@ -26,7 +26,8 @@ query = query_builder.select("test_field", "another_test_field").from_("test_tab
 Alternatively, you can create the corresponding `Query` class associated with the dialect directly:
 
 ```python
-from pyquerybuilder.query import MySQLQuery
+from sqlscribe.query import MySQLQuery
+
 query_builder = MySQLQuery()
 query = query_builder.select("test_field", "another_test_field").from_("test_table").build()
 ```
@@ -35,7 +36,8 @@ query = query_builder.select("test_field", "another_test_field").from_("test_tab
 Furthermore, if there are any dialects that we currently don't support, you can create your own by subclassing `Query` and registering it with the `QueryRegistry`:
 
 ```python
-from pyquerybuilder.query import QueryRegistry, Query
+from sqlscribe.query import QueryRegistry, Query
+
 
 @QueryRegistry.register("custom")
 class CustomQuery(Query):
@@ -46,7 +48,8 @@ class CustomQuery(Query):
 An alternative method for building queries is through the `Table` object:
 
 ```python
-from pyquerybuilder.table import MySQLTable
+from sqlscribe.table import MySQLTable
+
 table = MySQLTable("test_table", "test_field", "another_test_field")
 query = table.select("test_field").build()
 ```
@@ -54,7 +57,8 @@ query = table.select("test_field").build()
 A schema for the table can also be provided as a keyword argument, after the columns/fields:
 
 ```python
-from pyquerybuilder.table import MySQLTable
+from sqlscribe.table import MySQLTable
+
 table = MySQLTable("test_table", "test_field", "another_test_field", schema="test_schema")
 query = table.select("test_field").build()
 ```
@@ -62,30 +66,32 @@ query = table.select("test_field").build()
 Additionally, in the event an invalid field is provided in the `select` call, we will raise an exception:
 
 ```python
-from pyquerybuilder.table import MySQLTable
+from sqlscribe.table import MySQLTable
 
 table = MySQLTable("test_table", "test_field", "another_test_field")
-table.select("some_nonexistent_field") # will raise InvalidFieldsException
+table.select("some_nonexistent_field")  # will raise InvalidFieldsException
 ```
 
 `Table` also offers a `create` method in the event you've added a new dialect which doesn't have an associated `Table` implementation, or if you need to change it for different environments (e.g; `sqlite` for local development, `mysql`/`postgres`/`oracle`/etc. for deployment):
 
 ```python
-from pyquerybuilder.table import Table
-new_dialect_table_class = Table.create("new-dialect") # assuming you've registered "new-dialect" with the `QueryRegistry`
+from sqlscribe.table import Table
+
+new_dialect_table_class = Table.create(
+    "new-dialect")  # assuming you've registered "new-dialect" with the `QueryRegistry`
 table = new_dialect_table_class("test_table", "test_field", "another_test_field")
 ```
 
 You can overwrite the original fields supplied to a `Table` as well, which will delete the old attributes and set new ones:
 
 ```python
-from pyquerybuilder.table import MySQLTable
+from sqlscribe.table import MySQLTable
 
 table = MySQLTable("test_table", "test_field", "another_test_field")
-table.test_field # valid
+table.test_field  # valid
 table.fields = ['new_test_field']
 table.select("new_test_field")
-table.new_test_field # now valid - but `table.test_field` is not anymore
+table.new_test_field  # now valid - but `table.test_field` is not anymore
 ```
 
 
@@ -95,16 +101,17 @@ table.new_test_field # now valid - but `table.test_field` is not anymore
 For associating multiple `Table`s with a single schema, you can use the `Schema`:
 
 ```python
-from pyquerybuilder.schema import Schema
+from sqlscribe.schema import Schema
 
 schema = Schema("test_schema", tables=["test_table", "another_test_table"], dialect="postgres")
-schema.tables # a list of two `Table` objects
+schema.tables  # a list of two `Table` objects
 ```
 
 This is functionally equivalent to:
 
 ```python
-from pyquerybuilder.table import PostgresTable
+from sqlscribe.table import PostgresTable
+
 table = PostgresTable("test_table", schema="test_schema")
 another_table = PostgresTable("another_test_table", schema="test_schema")
 ```
@@ -116,16 +123,17 @@ export PYQUERY_BUILDER_DIALECT = 'postgres'
 ```
 
 ```python
-from pyquerybuilder.schema import Schema
+from sqlscribe.schema import Schema
 
 schema = Schema("test_schema", tables=["test_table", "another_test_table"])
-schema.tables # a list of two `PostgresTable` objects
+schema.tables  # a list of two `PostgresTable` objects
 ```
 
 Alternatively, if you already have existing `Table` objects you want to associate with the schema, you can supply them directly (in this case, `dialect` is not needed):
+
 ```python
-from pyquerybuilder.schema import Schema
-from pyquerybuilder.table import PostgresTable
+from sqlscribe.schema import Schema
+from sqlscribe.table import PostgresTable
 
 table = PostgresTable("test_table")
 another_table = PostgresTable("another_test_table")

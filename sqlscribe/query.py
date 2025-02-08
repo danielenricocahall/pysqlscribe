@@ -3,7 +3,7 @@ from abc import abstractmethod, ABC
 from functools import reduce
 from typing import Any, Dict, Self, Callable, Tuple
 
-from pyquerybuilder.regex_patterns import VALID_IDENTIFIER_REGEX
+from sqlscribe.regex_patterns import VALID_IDENTIFIER_REGEX
 
 SELECT = "SELECT"
 FROM = "FROM"

@@ -1,4 +1,4 @@
-name: PyQueryBuilder CI
+name: SQLScribe CI
 
 on:
   push:

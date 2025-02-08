@@ -1,6 +1,6 @@
 import pytest
 
-from pyquerybuilder.table import InvalidFieldsException, MySQLTable, OracleTable, Table
+from sqlscribe.table import InvalidFieldsException, MySQLTable, OracleTable, Table
 
 
 def test_table_select():
