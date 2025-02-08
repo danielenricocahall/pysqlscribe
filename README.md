@@ -158,7 +158,7 @@ This project currently uses `uv` for convenience, although we currently only hav
 uv sync
 ```
 
-## Unit Testing]
+## Unit Testing
 `pytest` is used for all unit testing. To run the unit tests locally (assuming a local environment is set up):
 ```shell
 uv run pytest
