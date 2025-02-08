@@ -3,7 +3,7 @@ name = "sqlscribe"
 version = "0.0.1"
 description = "A simple Python Library for building relational database queries using objects"
 readme = "README.md"
-authors = ["Daniel Cahall <danielenricocahall@gmail.com>"]
+authors = [{ name="Daniel Cahall", email="danielenricocahall@gmail.com" }]
 requires-python = ">=3.10"
 dependencies = []
 homepage = "https://github.com/danielenricocahall/sqlscribe"
