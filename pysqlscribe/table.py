@@ -1,6 +1,7 @@
 from abc import ABC
 from typing import List
 
+from pysqlscribe.column import Column
 from pysqlscribe.query import QueryRegistry
 from pysqlscribe.regex_patterns import VALID_IDENTIFIER_REGEX
 
@@ -74,7 +75,7 @@ class Table(ABC):
                 delattr(self, field)
         self._fields = fields_
         for field in fields_:
-            setattr(self, field, None)
+            setattr(self, field, Column(field))
 
 
 MySQLTable = Table.create("mysql")
