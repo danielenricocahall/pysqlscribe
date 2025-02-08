@@ -9,7 +9,7 @@ dependencies = []
 license-files = ["LICENSE"]
 
 [project.urls]
-"Source code" = "https://github.com/danielenricocahall/sqlscribe"
+"Source code" = "https://github.com/danielenricocahall/pysqlscribe"
 
 [tool.uv]
 
