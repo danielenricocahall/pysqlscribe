@@ -1,4 +1,5 @@
 from abc import ABC
+from typing import List
 
 from pyquerybuilder.query import QueryRegistry
 from pyquerybuilder.regex_patterns import VALID_IDENTIFIER_REGEX
@@ -15,9 +16,8 @@ class Table(ABC):
 
     def __init__(self, name: str, *fields, schema: str | None = None):
         self.name = name
-        for field in fields:
-            setattr(self, field, None)
         self.schema = schema
+        self.fields = fields
 
     @classmethod
     def create(cls, dialect: str):
@@ -62,6 +62,19 @@ class Table(ABC):
         if not VALID_IDENTIFIER_REGEX.match(table_name):
             raise InvalidTableNameException(f"Invalid table name {table_name}")
         self._name = table_name
+
+    @property
+    def fields(self):
+        return self._fields
+
+    @fields.setter
+    def fields(self, fields_: List[str]):
+        if getattr(self, "_fields", None):
+            for field in self.fields:
+                delattr(self, field)
+        self._fields = fields_
+        for field in fields_:
+            setattr(self, field, None)
 
 
 MySQLTable = Table.create("mysql")
