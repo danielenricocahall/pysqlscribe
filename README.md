@@ -20,7 +20,7 @@ A `Query` object can be constructed using the `QueryRegistry`'s `get_builder` if
 from pysqlscribe.query import QueryRegistry
 
 query_builder = QueryRegistry.get_builder("mysql")
-query = query_builder.select("test_field", "another_test_field").from_("test_table").build()
+query = query_builder.select("test_column", "another_test_column").from_("test_table").build()
 ```
 
 Alternatively, you can create the corresponding `Query` class associated with the dialect directly:
@@ -29,12 +29,12 @@ Alternatively, you can create the corresponding `Query` class associated with th
 from pysqlscribe.query import MySQLQuery
 
 query_builder = MySQLQuery()
-query = query_builder.select("test_field", "another_test_field").from_("test_table").build()
+query = query_builder.select("test_column", "another_test_column").from_("test_table").build()
 ```
 In both cases, the output is:
 
 ```mysql
-SELECT `test_field`,`another_test_field` FROM `test_table`
+SELECT `test_column`,`another_test_column` FROM `test_table`
 ```
 
 Furthermore, if there are any dialects that we currently don't support, you can create your own by subclassing `Query` and registering it with the `QueryRegistry`:
@@ -54,27 +54,27 @@ An alternative method for building queries is through the `Table` object:
 ```python
 from pysqlscribe.table import MySQLTable
 
-table = MySQLTable("test_table", "test_field", "another_test_field")
-query = table.select("test_field").build()
+table = MySQLTable("test_table", "test_column", "another_test_column")
+query = table.select("test_column").build()
 ```
 
 Output:
 ```mysql
-SELECT `test_field` FROM `test_table`
+SELECT `test_column` FROM `test_table`
 ```
 
-A schema for the table can also be provided as a keyword argument, after the columns/fields:
+A schema for the table can also be provided as a keyword argument, after the columns:
 
 ```python
 from pysqlscribe.table import MySQLTable
 
-table = MySQLTable("test_table", "test_field", "another_test_field", schema="test_schema")
-query = table.select("test_field").build()
+table = MySQLTable("test_table", "test_column", "another_test_column", schema="test_schema")
+query = table.select("test_column").build()
 ```
 
 Output:
 ```mysql
-'SELECT `test_field` FROM `test_schema.test_table`'
+SELECT `test_column` FROM `test_schema.test_table`
 ```
 
 Additionally, in the event an invalid field is provided in the `select` call, we will raise an exception:
@@ -82,7 +82,7 @@ Additionally, in the event an invalid field is provided in the `select` call, we
 ```python
 from pysqlscribe.table import MySQLTable
 
-table = MySQLTable("test_table", "test_field", "another_test_field")
+table = MySQLTable("test_table", "test_column", "another_test_column")
 table.select("some_nonexistent_field")  # will raise InvalidColumnException
 ```
 
@@ -93,24 +93,35 @@ from pysqlscribe.table import Table
 
 new_dialect_table_class = Table.create(
     "new-dialect")  # assuming you've registered "new-dialect" with the `QueryRegistry`
-table = new_dialect_table_class("test_table", "test_field", "another_test_field")
+table = new_dialect_table_class("test_table", "test_column", "another_test_column")
 ```
 
-You can overwrite the original fields supplied to a `Table` as well, which will delete the old attributes and set new ones:
+You can overwrite the original columns supplied to a `Table` as well, which will delete the old attributes and set new ones:
 
 ```python
 from pysqlscribe.table import MySQLTable
 
-table = MySQLTable("test_table", "test_field", "another_test_field")
-table.test_field  # valid
-table.fields = ['new_test_field']
-table.select("new_test_field")
-table.new_test_field  # now valid - but `table.test_field` is not anymore
+table = MySQLTable("test_table", "test_column", "another_test_column")
+table.test_column  # valid
+table.fields = ['new_test_column']
+table.select("new_test_column")
+table.new_test_column  # now valid - but `table.test_column` is not anymore
 ```
 
+Additionally, you can reference the column attributes `Table` object when constructing queries. For example, in a `WHERE` clause:
 
+```python
+from pysqlscribe.table import PostgresTable
 
+table = PostgresTable("employee", "first_name", "last_name", "salary", "location")
+table.select("first_name", "last_name", "location").where(table.salary > 1000).build()
+```
 
+Output:
+
+```postgresql
+SELECT "first_name","last_name","location" FROM "employee" WHERE salary > 1000
+```
 ## Schema
 For associating multiple `Table`s with a single schema, you can use the `Schema`:
 
@@ -160,6 +171,7 @@ schema = Schema("test_schema", [table, another_table])
 ```python
 schema.test_table # will return the supplied table object with the name `"test_table"`
 ```
+
 
 
 # Contributions
