@@ -206,3 +206,4 @@ This is anticipated to grow, also there are certainly operations that are missin
 - [ ] Add more dialects
 - [ ] Support `OFFSET` for Oracle and SQLServer
 - [ ] Incorporate aggregations in a cleaner way e.g; an `aggregates` or `functions` module which can be applied to `Column` objects - potentially wrappers
+- [ ] Support for aliases and tables
