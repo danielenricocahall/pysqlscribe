@@ -68,3 +68,19 @@ def test_where_clause():
         query
         == "SELECT `test_column`,`another_test_column` FROM `test_table` WHERE test_column = 1 AND another_test_column > 2"
     )
+
+
+def test_group_by_having():
+    query_builder = QueryRegistry.get_builder("sqlite")
+    query = (
+        query_builder.select(
+            "product_line", "AVG(unit_price)", "SUM(quantity)", "SUM(total)"
+        )
+        .from_("sales")
+        .group_by("product_line")
+        .build()
+    )
+    assert (
+        query
+        == 'SELECT "product_line","AVG(unit_price)","SUM(quantity)","SUM(total)" FROM "sales" GROUP BY "product_line"'
+    )
