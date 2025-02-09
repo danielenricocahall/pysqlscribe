@@ -34,7 +34,7 @@ class Column:
     def name(self, column_name: str):
         if not (
             VALID_IDENTIFIER_REGEX.match(column_name)
-            or AGGREGATE_IDENTIFIER_REGEX(column_name)
+            or AGGREGATE_IDENTIFIER_REGEX.match(column_name)
         ):
             raise InvalidColumnNameException(f"Invalid column name {column_name}")
         self._name = column_name

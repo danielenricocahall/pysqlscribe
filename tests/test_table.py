@@ -1,5 +1,6 @@
 import pytest
 
+from pysqlscribe.aggregate_functions import count
 from pysqlscribe.table import (
     MySQLTable,
     OracleTable,
@@ -71,7 +72,7 @@ def test_table_group_by():
         "employee", "first_name", "last_name", "store_location", "salary"
     )
     query = (
-        table.select(table.store_location, "COUNT(1)")
+        table.select(table.store_location, count(1))
         .group_by(table.store_location)
         .build()
     )

@@ -8,25 +8,31 @@ SUM = "SUM"
 DISTINCT = "DISTINCT"
 
 
-def max_(column: Column) -> Column:
-    return Column(f"{MAX}({column.name})")
+def _aggregate_function(agg_function: str, column: Column | str | int):
+    if not isinstance(column, Column):
+        return f"{agg_function}({column})"
+    return Column(f"{agg_function}({column.name})")
 
 
-def sum_(column: Column) -> Column:
-    return Column(f"{SUM}({column.name})")
+def max_(column: Column | str) -> Column | str:
+    return _aggregate_function(MAX, column)
 
 
-def min_(column: Column) -> Column:
-    return Column(f"{MIN}({column.name})")
+def sum_(column: Column | str) -> Column:
+    return _aggregate_function(SUM, column)
 
 
-def avg(column: Column) -> Column:
-    return Column(f"{AVG}({column.name})")
+def min_(column: Column | str) -> Column | str:
+    return _aggregate_function(MIN, column)
 
 
-def count(column: Column) -> Column:
-    return Column(f"{COUNT}({column.name})")
+def avg(column: Column | str) -> Column | str:
+    return _aggregate_function(AVG, column)
 
 
-def distinct(column: Column) -> Column:
-    return Column(f"{DISTINCT}({column.name})")
+def count(column: Column | str) -> Column | str:
+    return _aggregate_function(COUNT, column)
+
+
+def distinct(column: Column | str) -> Column | str:
+    return _aggregate_function(DISTINCT, column)
