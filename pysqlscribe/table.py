@@ -1,9 +1,12 @@
+import re
 from abc import ABC
 from typing import List
 
 from pysqlscribe.column import Column
 from pysqlscribe.query import QueryRegistry
 from pysqlscribe.regex_patterns import VALID_IDENTIFIER_REGEX
+
+EVERYTHING = "*"
 
 
 class InvalidColumnsException(Exception): ...
@@ -37,10 +40,12 @@ class Table(ABC):
                 query_class.__init__(self)
                 Table.__init__(self, name, *fields, schema=schema)
 
-            def select(self, *fields):
+            def select(self, *columns):
                 try:
-                    assert all(hasattr(self, field) for field in fields)
-                    return super().select(*fields).from_(self.name)
+                    assert self.all_selected_columns_are_valid(columns)
+                    if all((isinstance(column, Column) for column in columns)):
+                        columns = [column.name for column in columns]
+                    return super().select(*columns).from_(self.name)
                 except AssertionError:
                     raise InvalidColumnsException(
                         f"Table {self.name} doesn't have one or more of the fields provided"
@@ -76,6 +81,20 @@ class Table(ABC):
         self._columns = columns_
         for column_name in columns_:
             setattr(self, column_name, Column(column_name))
+
+    def all_selected_columns_are_valid(self, selected_columns):
+        valid_columns = (*self.columns, EVERYTHING)
+        aggregate_pattern = re.compile(
+            r"^(COUNT|SUM|AVG|MIN|MAX)\((\*|\d+|[\w]+)\)$", re.IGNORECASE
+        )
+        for selected_column in selected_columns:
+            if selected_column in valid_columns:
+                continue
+
+            if aggregate_pattern.match(selected_column):
+                continue
+            return False
+        return True
 
 
 MySQLTable = Table.create("mysql")

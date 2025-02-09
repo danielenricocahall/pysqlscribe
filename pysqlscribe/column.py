@@ -44,6 +44,9 @@ class Column:
             "Columns can only be compared to other columns or fixed string values"
         )
 
+    def __str__(self):
+        return self.name
+
     def __eq__(self, other: Self | str):
         return self._expression("=", other)
 

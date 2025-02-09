@@ -57,7 +57,7 @@ def test_table_where_clause_fixed_value():
 def test_table_where_clause_other_column():
     table = MySQLTable("test_table", "test_column", "other_test_column")
     query = (
-        table.select("test_column")
+        table.select(table.test_column)
         .where(table.test_column > table.other_test_column)
         .build()
     )
