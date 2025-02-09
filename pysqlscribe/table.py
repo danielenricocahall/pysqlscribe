@@ -19,8 +19,8 @@ class InvalidTableNameException(Exception): ...
 class Table(ABC):
     __cache: dict[str, type["Table"]] = {}
 
-    def __init__(self, name: str, *columns, schema: str | None = None):
-        self.name = name
+    def __init__(self, table_name: str, *columns, schema: str | None = None):
+        self.name = table_name
         self.schema = schema
         self.columns = columns
 
@@ -69,16 +69,16 @@ class Table(ABC):
         return DynamicTable
 
     @property
-    def name(self):
+    def table_name(self):
         if self.schema:
-            return f"{self.schema}.{self._name}"
-        return self._name
+            return f"{self.schema}.{self._table_name}"
+        return self._table_name
 
-    @name.setter
-    def name(self, table_name: str):
-        if not VALID_IDENTIFIER_REGEX.match(table_name):
-            raise InvalidTableNameException(f"Invalid table name {table_name}")
-        self._name = table_name
+    @table_name.setter
+    def name(self, table_name_: str):
+        if not VALID_IDENTIFIER_REGEX.match(table_name_):
+            raise InvalidTableNameException(f"Invalid table name {table_name_}")
+        self._table_name = table_name_
 
     @property
     def columns(self):
