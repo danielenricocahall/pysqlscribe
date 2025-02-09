@@ -1,6 +1,9 @@
 from typing import Self
 
-from pysqlscribe.regex_patterns import VALID_IDENTIFIER_REGEX
+from pysqlscribe.regex_patterns import (
+    VALID_IDENTIFIER_REGEX,
+    AGGREGATE_IDENTIFIER_REGEX,
+)
 
 
 class InvalidColumnNameException(Exception): ...
@@ -29,7 +32,10 @@ class Column:
 
     @name.setter
     def name(self, column_name: str):
-        if not VALID_IDENTIFIER_REGEX.match(column_name):
+        if not (
+            VALID_IDENTIFIER_REGEX.match(column_name)
+            or AGGREGATE_IDENTIFIER_REGEX(column_name)
+        ):
             raise InvalidColumnNameException(f"Invalid column name {column_name}")
         self._name = column_name
 

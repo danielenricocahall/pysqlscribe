@@ -19,8 +19,8 @@ class InvalidTableNameException(Exception): ...
 class Table(ABC):
     __cache: dict[str, type["Table"]] = {}
 
-    def __init__(self, table_name: str, *columns, schema: str | None = None):
-        self.name = table_name
+    def __init__(self, name: str, *columns, schema: str | None = None):
+        self.table_name = name
         self.schema = schema
         self.columns = columns
 
@@ -46,7 +46,7 @@ class Table(ABC):
                     column.name if isinstance(column, Column) else column
                     for column in columns
                 ]
-                return super().select(*columns).from_(self.name)
+                return super().select(*columns).from_(self.table_name)
 
             def order_by(self, *columns):
                 columns = [
@@ -75,7 +75,7 @@ class Table(ABC):
         return self._table_name
 
     @table_name.setter
-    def name(self, table_name_: str):
+    def table_name(self, table_name_: str):
         if not VALID_IDENTIFIER_REGEX.match(table_name_):
             raise InvalidTableNameException(f"Invalid table name {table_name_}")
         self._table_name = table_name_

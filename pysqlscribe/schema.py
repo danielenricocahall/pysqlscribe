@@ -41,7 +41,7 @@ class Schema:
         if all(isinstance(table, str) for table in tables_):
             tables_ = [Table.create(self.dialect)(table_name) for table_name in tables_]
         for table in tables_:
-            setattr(self, table.name, table)
+            setattr(self, table.table_name, table)
             table.schema = self.name
         self._tables = tables_
 

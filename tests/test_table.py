@@ -25,7 +25,7 @@ def test_table_with_schema():
         query
         == "SELECT `test_column`,`another_test_column` FROM `test_schema.test_table`"
     )
-    assert table.name == "test_schema.test_table"
+    assert table.table_name == "test_schema.test_table"
 
 
 def test_create_existing_table_type():

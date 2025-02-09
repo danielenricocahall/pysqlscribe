@@ -8,7 +8,7 @@ def test_schema_create_tables():
     )
     assert len(schema.tables) == 2
     assert all(isinstance(table, PostgresTable) for table in schema.tables)
-    assert all(table.name.startswith("test_schema") for table in schema.tables)
+    assert all(table.table_name.startswith("test_schema") for table in schema.tables)
     assert hasattr(schema, "test_table")
 
 
@@ -17,7 +17,7 @@ def test_schema_dialect_environment_provided(monkeypatch):
     schema = Schema("test_schema", ["test_table", "another_test_table"])
     assert len(schema.tables) == 2
     assert all(isinstance(table, SqliteTable) for table in schema.tables)
-    assert all(table.name.startswith("test_schema") for table in schema.tables)
+    assert all(table.table_name.startswith("test_schema") for table in schema.tables)
     assert hasattr(schema, "test_table")
 
 
@@ -29,5 +29,5 @@ def test_schema_supply_tables():
     schema = Schema("kaibacorp", tables)
     assert len(schema.tables) == 2
     assert all(isinstance(table, Table) for table in schema.tables)
-    assert all(table.name.startswith("kaibacorp") for table in schema.tables)
+    assert all(table.table_name.startswith("kaibacorp") for table in schema.tables)
     assert hasattr(schema, "cards")
