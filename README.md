@@ -31,7 +31,11 @@ from pysqlscribe.query import MySQLQuery
 query_builder = MySQLQuery()
 query = query_builder.select("test_field", "another_test_field").from_("test_table").build()
 ```
+In both cases, the output is:
 
+```mysql
+SELECT `test_field`,`another_test_field` FROM `test_table`
+```
 
 Furthermore, if there are any dialects that we currently don't support, you can create your own by subclassing `Query` and registering it with the `QueryRegistry`:
 
@@ -54,6 +58,11 @@ table = MySQLTable("test_table", "test_field", "another_test_field")
 query = table.select("test_field").build()
 ```
 
+Output:
+```mysql
+SELECT `test_field` FROM `test_table`
+```
+
 A schema for the table can also be provided as a keyword argument, after the columns/fields:
 
 ```python
@@ -63,13 +72,18 @@ table = MySQLTable("test_table", "test_field", "another_test_field", schema="tes
 query = table.select("test_field").build()
 ```
 
+Output:
+```mysql
+SELECT `test_field` FROM `test_table`
+```
+
 Additionally, in the event an invalid field is provided in the `select` call, we will raise an exception:
 
 ```python
 from pysqlscribe.table import MySQLTable
 
 table = MySQLTable("test_table", "test_field", "another_test_field")
-table.select("some_nonexistent_field")  # will raise InvalidFieldsException
+table.select("some_nonexistent_field")  # will raise InvalidColumnException
 ```
 
 `Table` also offers a `create` method in the event you've added a new dialect which doesn't have an associated `Table` implementation, or if you need to change it for different environments (e.g; `sqlite` for local development, `mysql`/`postgres`/`oracle`/etc. for deployment):
