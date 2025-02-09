@@ -74,7 +74,7 @@ query = table.select("test_field").build()
 
 Output:
 ```mysql
-SELECT `test_field` FROM `test_table`
+'SELECT `test_field` FROM `test_schema.test_table`'
 ```
 
 Additionally, in the event an invalid field is provided in the `select` call, we will raise an exception:
