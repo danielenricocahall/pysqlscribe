@@ -34,12 +34,12 @@ class Column:
         self._name = column_name
 
     def _expression(self, operator: str, other: Self | str | int):
-        if isinstance(other, int):
-            return self._expression(operator, str(other))
         if isinstance(other, Column):
             return Expression(self.name, operator, other.name)
         elif isinstance(other, str):
-            return Expression(self.name, operator, other)
+            return Expression(self.name, operator, f"'{other}'")
+        elif isinstance(other, int):
+            return Expression(self.name, operator, str(other))
         raise NotImplementedError(
             "Columns can only be compared to other columns or fixed string values"
         )

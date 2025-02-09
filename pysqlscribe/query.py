@@ -6,6 +6,7 @@ from typing import Any, Dict, Self, Callable, Tuple
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
     AGGREGATE_IDENTIFIER_REGEX,
+    WILDCARD_REGEX,
 )
 
 SELECT = "SELECT"
@@ -63,7 +64,7 @@ class SelectNode(Node):
         return (FromNode,)
 
     def __str__(self):
-        return f"{SELECT} {self.state['fields']}"
+        return f"{SELECT} {self.state['columns']}"
 
 
 class FromNode(Node):
@@ -97,7 +98,7 @@ class OrderByNode(Node):
         return LimitNode
 
     def __str__(self):
-        return f"{ORDER_BY} {self.state['fields']}"
+        return f"{ORDER_BY} {self.state['columns']}"
 
 
 class LimitNode(Node):
@@ -133,7 +134,7 @@ class GroupByNode(Node):
         return HavingNode, OrderByNode, LimitNode
 
     def __str__(self):
-        return f"{GROUP_BY} {self.state['fields']}"
+        return f"{GROUP_BY} {self.state['columns']}"
 
 
 class HavingNode(Node):
@@ -156,14 +157,14 @@ class Query(ABC):
     node: Node | None = None
 
     def select(self, *args) -> Self:
-        if not self.node:
-            self.node = SelectNode(
-                {
-                    "fields": reconcile_args_into_string(
-                        args, escape_identifier=self.escape_identifier
-                    )
-                }
+        if WILDCARD_REGEX.match(args[0]):
+            columns = args[0]
+        else:
+            columns = reconcile_args_into_string(
+                args, escape_identifier=self.escape_identifier
             )
+        if not self.node:
+            self.node = SelectNode({"columns": columns})
         return self
 
     def from_(self, *args) -> Self:
@@ -191,7 +192,7 @@ class Query(ABC):
         self.node.add(
             OrderByNode(
                 {
-                    "fields": reconcile_args_into_string(
+                    "columns": reconcile_args_into_string(
                         args, escape_identifier=self.escape_identifier
                     )
                 }
@@ -214,7 +215,7 @@ class Query(ABC):
         self.node.add(
             GroupByNode(
                 {
-                    "fields": reconcile_args_into_string(
+                    "columns": reconcile_args_into_string(
                         args, escape_identifier=self.escape_identifier
                     )
                 }

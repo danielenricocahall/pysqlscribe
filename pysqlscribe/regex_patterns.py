@@ -7,3 +7,5 @@ VALID_IDENTIFIER_REGEX = re.compile(
 AGGREGATE_IDENTIFIER_REGEX = re.compile(
     r"^(COUNT|SUM|AVG|MIN|MAX)\((\*|\d+|[\w]+)\)$", re.IGNORECASE
 )
+
+WILDCARD_REGEX = re.compile(r"^\*$")

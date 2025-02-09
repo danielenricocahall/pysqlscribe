@@ -1,7 +1,6 @@
 import pytest
 
 from pysqlscribe.table import (
-    InvalidColumnsException,
     MySQLTable,
     OracleTable,
     Table,
@@ -15,12 +14,6 @@ def test_table_select():
     assert query == "SELECT `test_column` FROM `test_table`"
     assert hasattr(table, "test_column")
     assert table.columns == ("test_column", "another_test_column")
-
-
-def test_table_non_existent_field():
-    table = MySQLTable("test_table", "test_column", "another_test_column")
-    with pytest.raises(InvalidColumnsException):
-        table.select("some_nonexistent_test_column")
 
 
 def test_table_with_schema():
@@ -78,7 +71,7 @@ def test_table_group_by():
         "employee", "first_name", "last_name", "store_location", "salary"
     )
     query = (
-        table.select("store_location", "COUNT(1)")
+        table.select(table.store_location, "COUNT(1)")
         .group_by(table.store_location)
         .build()
     )
@@ -86,3 +79,9 @@ def test_table_group_by():
         query
         == 'SELECT "store_location","COUNT(1)" FROM "employee" GROUP BY "store_location"'
     )
+
+
+def test_table_select_all():
+    table = PostgresTable("employee", "first_name", "last_name", "dept", "salary")
+    query = table.select("*").where(table.dept == "Sales").build()
+    assert query == 'SELECT * FROM "employee" WHERE dept = "Sales"'

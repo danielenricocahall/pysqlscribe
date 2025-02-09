@@ -77,15 +77,6 @@ Output:
 SELECT `test_column` FROM `test_schema.test_table`
 ```
 
-Additionally, in the event an invalid field is provided in the `select` call, we will raise an exception:
-
-```python
-from pysqlscribe.table import MySQLTable
-
-table = MySQLTable("test_table", "test_column", "another_test_column")
-table.select("some_nonexistent_field")  # will raise InvalidColumnException
-```
-
 `Table` also offers a `create` method in the event you've added a new dialect which doesn't have an associated `Table` implementation, or if you need to change it for different environments (e.g; `sqlite` for local development, `mysql`/`postgres`/`oracle`/etc. for deployment):
 
 ```python
