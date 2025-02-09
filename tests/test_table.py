@@ -84,4 +84,4 @@ def test_table_group_by():
 def test_table_select_all():
     table = PostgresTable("employee", "first_name", "last_name", "dept", "salary")
     query = table.select("*").where(table.dept == "Sales").build()
-    assert query == 'SELECT * FROM "employee" WHERE dept = "Sales"'
+    assert query == "SELECT * FROM \"employee\" WHERE dept = 'Sales'"
