@@ -1,10 +1,12 @@
-import re
 from abc import ABC
 from typing import List
 
 from pysqlscribe.column import Column
 from pysqlscribe.query import QueryRegistry
-from pysqlscribe.regex_patterns import VALID_IDENTIFIER_REGEX
+from pysqlscribe.regex_patterns import (
+    VALID_IDENTIFIER_REGEX,
+    AGGREGATE_IDENTIFIER_REGEX,
+)
 
 EVERYTHING = "*"
 
@@ -94,14 +96,11 @@ class Table(ABC):
 
     def all_selected_columns_are_valid(self, selected_columns):
         valid_columns = (*self.columns, EVERYTHING)
-        aggregate_pattern = re.compile(
-            r"^(COUNT|SUM|AVG|MIN|MAX)\((\*|\d+|[\w]+)\)$", re.IGNORECASE
-        )
         for selected_column in selected_columns:
             if selected_column in valid_columns:
                 continue
 
-            if aggregate_pattern.match(selected_column):
+            if AGGREGATE_IDENTIFIER_REGEX.match(selected_column):
                 continue
             return False
         return True
