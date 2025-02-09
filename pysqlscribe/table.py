@@ -51,6 +51,16 @@ class Table(ABC):
                         f"Table {self.name} doesn't have one or more of the fields provided"
                     )
 
+            def order_by(self, *columns):
+                if all((isinstance(column, Column) for column in columns)):
+                    columns = [column.name for column in columns]
+                return super().order_by(*columns)
+
+            def group_by(self, *columns):
+                if all((isinstance(column, Column) for column in columns)):
+                    columns = [column.name for column in columns]
+                return super().group_by(*columns)
+
         # Set a meaningful class name
         DynamicTable.__name__ = class_name
         cls.__cache[class_name] = DynamicTable

@@ -3,7 +3,10 @@ from abc import abstractmethod, ABC
 from functools import reduce
 from typing import Any, Dict, Self, Callable, Tuple
 
-from pysqlscribe.regex_patterns import VALID_IDENTIFIER_REGEX
+from pysqlscribe.regex_patterns import (
+    VALID_IDENTIFIER_REGEX,
+    AGGREGATE_IDENTIFIER_REGEX,
+)
 
 SELECT = "SELECT"
 FROM = "FROM"
@@ -13,6 +16,8 @@ ORDER_BY = "ORDER BY"
 AND = "AND"
 FETCH_NEXT = "FETCH NEXT"
 OFFSET = "OFFSET"
+GROUP_BY = "GROUP BY"
+HAVING = "HAVING"
 
 
 def reconcile_args_into_string(*args, escape_identifier: Callable[[str], str]) -> str:
@@ -21,7 +26,10 @@ def reconcile_args_into_string(*args, escape_identifier: Callable[[str], str]) -
         arg = [arg]
     for identifier in arg:
         identifier = identifier.strip()
-        if not VALID_IDENTIFIER_REGEX.match(identifier):
+        if not (
+            VALID_IDENTIFIER_REGEX.match(identifier)
+            or AGGREGATE_IDENTIFIER_REGEX.match(identifier)
+        ):
             raise ValueError(f"Invalid SQL identifier: {identifier}")
     identifiers = [escape_identifier(identifier) for identifier in arg]
     return ",".join(identifiers)
@@ -83,12 +91,6 @@ class WhereNode(Node):
             return WhereNode({"conditions": compound_condition})
 
 
-class GroupByNode(Node):
-    @property
-    def valid_next_nodes(self):
-        return OrderByNode
-
-
 class OrderByNode(Node):
     @property
     def valid_next_nodes(self):
@@ -123,6 +125,31 @@ class OffsetNode(Node):
 
     def __str__(self):
         return f"{OFFSET} {self.state['offset']}"
+
+
+class GroupByNode(Node):
+    @property
+    def valid_next_nodes(self):
+        return HavingNode, OrderByNode, LimitNode
+
+    def __str__(self):
+        return f"{GROUP_BY} {self.state['fields']}"
+
+
+class HavingNode(Node):
+    @property
+    def valid_next_nodes(self):
+        return OrderByNode, LimitNode
+
+    def __str__(self):
+        return f"{HAVING} {self.state['conditions']}"
+
+    def __and__(self, other):
+        if isinstance(other, HavingNode):
+            compound_condition = (
+                f"{self.state['conditions']} {AND} {other.state['conditions']}"
+            )
+            return HavingNode({"conditions": compound_condition})
 
 
 class Query(ABC):
@@ -181,6 +208,27 @@ class Query(ABC):
     def offset(self, n: int | str):
         self.node.add(OffsetNode({"offset": int(n)}))
         self.node = self.node = self.node.next_
+        return self
+
+    def group_by(self, *args) -> Self:
+        self.node.add(
+            GroupByNode(
+                {
+                    "fields": reconcile_args_into_string(
+                        args, escape_identifier=self.escape_identifier
+                    )
+                }
+            )
+        )
+        self.node = self.node.next_
+        return self
+
+    def having(self, *args) -> Self:
+        having_node = reduce(
+            operator.and_, map(lambda arg: HavingNode({"conditions": arg}), args)
+        )
+        self.node.add(having_node)
+        self.node = self.node.next_
         return self
 
     def build(self, clear: bool = True) -> str:

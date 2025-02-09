@@ -1,6 +1,12 @@
 import pytest
 
-from pysqlscribe.table import InvalidColumnsException, MySQLTable, OracleTable, Table
+from pysqlscribe.table import (
+    InvalidColumnsException,
+    MySQLTable,
+    OracleTable,
+    Table,
+    PostgresTable,
+)
 
 
 def test_table_select():
@@ -64,4 +70,19 @@ def test_table_where_clause_other_column():
     assert (
         query
         == "SELECT `test_column` FROM `test_table` WHERE test_column > other_test_column"
+    )
+
+
+def test_table_group_by():
+    table = PostgresTable(
+        "employee", "first_name", "last_name", "store_location", "salary"
+    )
+    query = (
+        table.select("store_location", "COUNT(1)")
+        .group_by(table.store_location)
+        .build()
+    )
+    assert (
+        query
+        == 'SELECT "store_location","COUNT(1)" FROM "employee" GROUP BY "store_location"'
     )
