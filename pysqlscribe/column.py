@@ -30,14 +30,31 @@ class Column:
     @name.setter
     def name(self, column_name: str):
         if not VALID_IDENTIFIER_REGEX.match(column_name):
-            raise InvalidColumnNameException(f"Invalid table name {column_name}")
+            raise InvalidColumnNameException(f"Invalid column name {column_name}")
         self._name = column_name
 
-    def __eq__(self, other: Self | str):
+    def _expression(self, operator: str, other: Self | str | int):
+        if isinstance(other, int):
+            return self._expression(operator, str(other))
         if isinstance(other, Column):
-            return Expression(self.name, "=", other.name)
+            return Expression(self.name, operator, other.name)
         elif isinstance(other, str):
-            return Expression(self.name, "=", f"'{other}'")
-        return NotImplementedError(
+            return Expression(self.name, operator, other)
+        raise NotImplementedError(
             "Columns can only be compared to other columns or fixed string values"
         )
+
+    def __eq__(self, other: Self | str):
+        return self._expression("=", other)
+
+    def __lt__(self, other):
+        return self._expression("<", other)
+
+    def __gt__(self, other):
+        return self._expression(">", other)
+
+    def __le__(self, other):
+        return self._expression("<=", other)
+
+    def __ge__(self, other):
+        return self._expression(">=", other)

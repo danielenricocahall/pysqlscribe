@@ -46,3 +46,22 @@ def test_table_reassign_columns():
     table.columns = new_columns
     assert all(hasattr(table, column) for column in new_columns)
     assert all(not hasattr(table, column) for column in old_columns)
+
+
+def test_table_where_clause_fixed_value():
+    table = MySQLTable("test_table", "test_column")
+    query = table.select("test_column").where(table.test_column > 5).build()
+    assert query == "SELECT `test_column` FROM `test_table` WHERE test_column > 5"
+
+
+def test_table_where_clause_other_column():
+    table = MySQLTable("test_table", "test_column", "other_test_column")
+    query = (
+        table.select("test_column")
+        .where(table.test_column > table.other_test_column)
+        .build()
+    )
+    assert (
+        query
+        == "SELECT `test_column` FROM `test_table` WHERE test_column > other_test_column"
+    )
