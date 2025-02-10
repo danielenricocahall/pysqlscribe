@@ -1,8 +1,8 @@
 from abc import ABC
-from typing import List
+from typing import List, Self
 
 from pysqlscribe.column import Column
-from pysqlscribe.query import QueryRegistry
+from pysqlscribe.query import QueryRegistry, JoinType
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
 )
@@ -61,6 +61,16 @@ class Table(ABC):
                     for column in columns
                 ]
                 return super().group_by(*columns)
+
+            def join(
+                self,
+                table: str | Table,
+                join_type: str = JoinType.INNER,
+                condition: str | None = None,
+            ) -> Self:
+                if isinstance(table, Table):
+                    table = table.table_name
+                return super().join(table, join_type, condition)
 
         # Set a meaningful class name
         DynamicTable.__name__ = class_name

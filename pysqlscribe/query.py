@@ -214,7 +214,7 @@ class Query(ABC):
         return self
 
     def join(
-        self, table: str, join_type: str = "INNER", condition: str | None = None
+        self, table: str, join_type: str = JoinType.INNER, condition: str | None = None
     ) -> Self:
         if not condition and join_type != JoinType.NATURAL:
             raise InvalidJoinException(
