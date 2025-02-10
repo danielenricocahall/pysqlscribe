@@ -30,7 +30,7 @@ def avg(column: Column | str) -> Column | str:
     return _aggregate_function(AVG, column)
 
 
-def count(column: Column | str) -> Column | str:
+def count(column: Column | str | int) -> Column | str:
     return _aggregate_function(COUNT, column)
 
 
