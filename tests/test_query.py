@@ -1,5 +1,5 @@
 import pytest
-from pysqlscribe.query import QueryRegistry
+from pysqlscribe.query import QueryRegistry, JoinType
 
 
 @pytest.mark.parametrize(
@@ -83,4 +83,30 @@ def test_group_by_having():
     assert (
         query
         == 'SELECT "product_line",AVG(unit_price),SUM(quantity),SUM(total) FROM "sales" GROUP BY "product_line"'
+    )
+
+
+@pytest.mark.parametrize("join_type", set(JoinType) - {JoinType.NATURAL})
+def test_non_natural_joins(join_type: JoinType):
+    query_builder = QueryRegistry.get_builder("oracle")
+    query_builder.select("employee_id", "store_location").from_("employees").join(
+        "payroll", join_type, "employees.payroll_id = payroll.id"
+    )
+    query = query_builder.build()
+    assert (
+        query
+        == f'SELECT "employee_id","store_location" FROM "employees" {join_type} JOIN "payroll" ON employees.payroll_id = payroll.id'
+    )
+
+
+@pytest.mark.parametrize("join_type", set(JoinType) - {JoinType.NATURAL})
+def test_join_where(join_type: JoinType):
+    query_builder = QueryRegistry.get_builder("oracle")
+    query_builder.select("employee_id", "store_location").from_("employees").join(
+        "payroll", join_type, "employees.payroll_id = payroll.id"
+    ).where("employee.salary > 10000")
+    query = query_builder.build()
+    assert (
+        query
+        == f'SELECT "employee_id","store_location" FROM "employees" {join_type} JOIN "payroll" ON employees.payroll_id = payroll.id WHERE employee.salary > 10000'
     )

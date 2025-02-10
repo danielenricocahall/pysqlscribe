@@ -1,5 +1,6 @@
 import operator
 from abc import abstractmethod, ABC
+from enum import Enum
 from functools import reduce
 from typing import Any, Dict, Self, Callable, Tuple
 
@@ -13,12 +14,23 @@ SELECT = "SELECT"
 FROM = "FROM"
 WHERE = "WHERE"
 LIMIT = "LIMIT"
+JOIN = "JOIN"
 ORDER_BY = "ORDER BY"
 AND = "AND"
 FETCH_NEXT = "FETCH NEXT"
 OFFSET = "OFFSET"
 GROUP_BY = "GROUP BY"
 HAVING = "HAVING"
+
+
+class JoinType(str, Enum):
+    INNER: str = "INNER"
+    OUTER: str = "OUTER"
+    CROSS: str = "CROSS"
+    NATURAL: str = "NATURAL"
+
+    def __str__(self):
+        return self.value
 
 
 def reconcile_args_into_string(*args, escape_identifier: Callable[[str], str]) -> str:
@@ -71,10 +83,27 @@ class SelectNode(Node):
 class FromNode(Node):
     @property
     def valid_next_nodes(self):
-        return WhereNode, GroupByNode, OrderByNode, LimitNode
+        return JoinNode, WhereNode, GroupByNode, OrderByNode, LimitNode
 
     def __str__(self):
         return f"{FROM} {self.state['tables']}"
+
+
+class JoinNode(Node):
+    def __init__(self, state):
+        super().__init__(state)
+        self.join_type = state.get("join_type", JoinType.INNER)
+        self.table = state["table"]
+        self.condition = state.get("condition")
+
+    @property
+    def valid_next_nodes(self):
+        return WhereNode, GroupByNode, OrderByNode, LimitNode, JoinNode
+
+    def __str__(self):
+        return f"{self.join_type} {JOIN} {self.table} " + (
+            f"ON {self.condition}" if self.join_type != JoinType.NATURAL else ""
+        )
 
 
 class WhereNode(Node):
@@ -154,6 +183,9 @@ class HavingNode(Node):
             return HavingNode({"conditions": compound_condition})
 
 
+class InvalidJoinException(Exception): ...
+
+
 class Query(ABC):
     node: Node | None = None
 
@@ -175,6 +207,26 @@ class Query(ABC):
                     "tables": reconcile_args_into_string(
                         args, escape_identifier=self.escape_identifier
                     )
+                }
+            )
+        )
+        self.node = self.node.next_
+        return self
+
+    def join(
+        self, table: str, join_type: str = "INNER", condition: str | None = None
+    ) -> Self:
+        if not condition and join_type != JoinType.NATURAL:
+            raise InvalidJoinException(
+                "Conditions need to be supplied for any non-NATURAL joins"
+            )
+
+        self.node.add(
+            JoinNode(
+                {
+                    "join_type": join_type.upper(),
+                    "table": self.escape_identifier(table),
+                    "condition": condition,
                 }
             )
         )
