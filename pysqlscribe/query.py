@@ -25,14 +25,15 @@ def reconcile_args_into_string(*args, escape_identifier: Callable[[str], str]) -
     arg = args[0]
     if isinstance(arg, str):
         arg = [arg]
+    identifiers = []
     for identifier in arg:
         identifier = identifier.strip()
-        if not (
-            VALID_IDENTIFIER_REGEX.match(identifier)
-            or AGGREGATE_IDENTIFIER_REGEX.match(identifier)
-        ):
+        if VALID_IDENTIFIER_REGEX.match(identifier):
+            identifiers.append(escape_identifier(identifier))
+        elif AGGREGATE_IDENTIFIER_REGEX.match(identifier):
+            identifiers.append(identifier)
+        else:
             raise ValueError(f"Invalid SQL identifier: {identifier}")
-    identifiers = [escape_identifier(identifier) for identifier in arg]
     return ",".join(identifiers)
 
 

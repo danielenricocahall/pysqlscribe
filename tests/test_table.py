@@ -78,7 +78,7 @@ def test_table_group_by():
     )
     assert (
         query
-        == 'SELECT "store_location","COUNT(1)" FROM "employee" GROUP BY "store_location"'
+        == 'SELECT "store_location",COUNT(1) FROM "employee" GROUP BY "store_location"'
     )
 
 

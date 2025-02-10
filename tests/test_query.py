@@ -82,5 +82,5 @@ def test_group_by_having():
     )
     assert (
         query
-        == 'SELECT "product_line","AVG(unit_price)","SUM(quantity)","SUM(total)" FROM "sales" GROUP BY "product_line"'
+        == 'SELECT "product_line",AVG(unit_price),SUM(quantity),SUM(total) FROM "sales" GROUP BY "product_line"'
     )
