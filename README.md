@@ -113,6 +113,34 @@ Output:
 ```postgresql
 SELECT "first_name","last_name","location" FROM "employee" WHERE salary > 1000
 ```
+
+For computing aggregates (e.g; `MAX`, `AVG`, `COUNT`), we have functions available in the `aggregate_functions` module which will accept both strings or columns:
+
+```python
+from pysqlscribe.table import PostgresTable
+from pysqlscribe.aggregate_functions import max_
+table = PostgresTable(
+    "employee", "first_name", "last_name", "store_location", "salary"
+)
+query = (
+    table.select(table.store_location, max_(table.salary))
+    .group_by(table.store_location)
+    .build()
+)
+# Equivalently:
+query_with_strs = (
+    table.select("store_location", max_("salary"))
+    .group_by("store_location")
+    .build()
+)
+```
+Output:
+
+```postgresql
+SELECT "store_location",MAX(salary) FROM "employee" GROUP BY "store_location"
+```
+
+
 ## Schema
 For associating multiple `Table`s with a single schema, you can use the `Schema`:
 
@@ -196,5 +224,6 @@ This is anticipated to grow, also there are certainly operations that are missin
 - [ ] Support `JOIN`s
 - [ ] Add more dialects
 - [ ] Support `OFFSET` for Oracle and SQLServer
-- [ ] Incorporate aggregations in a cleaner way e.g; an `aggregates` or `functions` module which can be applied to `Column` objects - potentially wrappers
 - [ ] Support for aliases for tables and columns
+- [ ] Support subqueries
+- [ ] Improved injection mitigation  
