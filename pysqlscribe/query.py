@@ -241,6 +241,12 @@ class Query(ABC):
     def outer_join(self, table: str, condition: str):
         return self.join(table, JoinType.OUTER, condition)
 
+    def left_join(self, table: str, condition: str):
+        return self.join(table, JoinType.LEFT, condition)
+
+    def right_join(self, table: str, condition: str):
+        return self.join(table, JoinType.RIGHT, condition)
+
     def cross_join(self, table: str):
         return self.join(table, JoinType.CROSS)
 
