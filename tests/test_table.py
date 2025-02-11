@@ -108,3 +108,22 @@ def test_table_join_with_conditions(join_type: JoinType):
         query
         == f'SELECT "first_name","last_name","dept" FROM "employee" {join_type} JOIN "payroll" ON id = payroll_id'
     )
+
+
+@pytest.mark.parametrize("join_type", [JoinType.NATURAL, JoinType.CROSS])
+def test_table_join_without_conditions(join_type: JoinType):
+    employee_table = PostgresTable(
+        "employee", "first_name", "last_name", "dept", "payroll_id"
+    )
+    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    query = (
+        employee_table.select(
+            employee_table.first_name, employee_table.last_name, employee_table.dept
+        )
+        .join(payroll_table, join_type)
+        .build()
+    )
+    assert (
+        query
+        == f'SELECT "first_name","last_name","dept" FROM "employee" {join_type} JOIN "payroll"'
+    )
