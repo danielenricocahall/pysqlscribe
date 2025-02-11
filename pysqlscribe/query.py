@@ -216,9 +216,9 @@ class Query(ABC):
     def join(
         self, table: str, join_type: str = JoinType.INNER, condition: str | None = None
     ) -> Self:
-        if not condition and join_type != JoinType.NATURAL:
+        if condition and join_type in (JoinType.NATURAL, JoinType.CROSS):
             raise InvalidJoinException(
-                "Conditions need to be supplied for any non-NATURAL joins"
+                "Conditions need to be supplied for any join which is not NATURAL or CROSS"
             )
 
         self.node.add(
@@ -232,6 +232,18 @@ class Query(ABC):
         )
         self.node = self.node.next_
         return self
+
+    def inner_join(self, table: str, condition: str):
+        return self.join(table, JoinType.INNER, condition)
+
+    def outer_join(self, table: str, condition: str):
+        return self.join(table, JoinType.OUTER, condition)
+
+    def cross_join(self, table: str):
+        return self.join(table, JoinType.CROSS)
+
+    def natural_join(self, table: str):
+        return self.join(table, JoinType.NATURAL)
 
     def where(self, *args) -> Self:
         where_node = reduce(

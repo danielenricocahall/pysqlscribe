@@ -86,8 +86,8 @@ def test_group_by_having():
     )
 
 
-@pytest.mark.parametrize("join_type", set(JoinType) - {JoinType.NATURAL})
-def test_non_natural_joins(join_type: JoinType):
+@pytest.mark.parametrize("join_type", [JoinType.INNER, JoinType.OUTER])
+def test_joins_with_conditions(join_type: JoinType):
     query_builder = QueryRegistry.get_builder("oracle")
     query_builder.select("employee_id", "store_location").from_("employees").join(
         "payroll", join_type, "employees.payroll_id = payroll.id"
@@ -99,8 +99,8 @@ def test_non_natural_joins(join_type: JoinType):
     )
 
 
-@pytest.mark.parametrize("join_type", set(JoinType) - {JoinType.NATURAL})
-def test_join_where(join_type: JoinType):
+@pytest.mark.parametrize("join_type", [JoinType.INNER, JoinType.OUTER])
+def test_join_where_with_conditions(join_type: JoinType):
     query_builder = QueryRegistry.get_builder("oracle")
     query_builder.select("employee_id", "store_location").from_("employees").join(
         "payroll", join_type, "employees.payroll_id = payroll.id"

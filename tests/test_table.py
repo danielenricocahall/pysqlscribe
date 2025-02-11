@@ -89,8 +89,8 @@ def test_table_select_all():
     assert query == "SELECT * FROM \"employee\" WHERE dept = 'Sales'"
 
 
-@pytest.mark.parametrize("join_type", set(JoinType) - {JoinType.NATURAL})
-def test_table_join(join_type: JoinType):
+@pytest.mark.parametrize("join_type", [JoinType.INNER, JoinType.OUTER])
+def test_table_join_with_conditions(join_type: JoinType):
     employee_table = PostgresTable(
         "employee", "first_name", "last_name", "dept", "payroll_id"
     )
