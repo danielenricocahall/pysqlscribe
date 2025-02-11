@@ -26,6 +26,8 @@ HAVING = "HAVING"
 class JoinType(str, Enum):
     INNER: str = "INNER"
     OUTER: str = "OUTER"
+    LEFT: str = "LEFT"
+    RIGHT: str = "RIGHT"
     CROSS: str = "CROSS"
     NATURAL: str = "NATURAL"
 

@@ -86,7 +86,9 @@ def test_group_by_having():
     )
 
 
-@pytest.mark.parametrize("join_type", [JoinType.INNER, JoinType.OUTER])
+@pytest.mark.parametrize(
+    "join_type", [JoinType.INNER, JoinType.OUTER, JoinType.LEFT, JoinType.RIGHT]
+)
 def test_joins_with_conditions(join_type: JoinType):
     query_builder = QueryRegistry.get_builder("oracle")
     query_builder.select("employee_id", "store_location").from_("employees").join(
@@ -99,7 +101,9 @@ def test_joins_with_conditions(join_type: JoinType):
     )
 
 
-@pytest.mark.parametrize("join_type", [JoinType.INNER, JoinType.OUTER])
+@pytest.mark.parametrize(
+    "join_type", [JoinType.INNER, JoinType.OUTER, JoinType.LEFT, JoinType.RIGHT]
+)
 def test_join_where_with_conditions(join_type: JoinType):
     query_builder = QueryRegistry.get_builder("oracle")
     query_builder.select("employee_id", "store_location").from_("employees").join(
