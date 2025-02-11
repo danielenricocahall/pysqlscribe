@@ -1,5 +1,5 @@
 import pytest
-from pysqlscribe.query import QueryRegistry, JoinType
+from pysqlscribe.query import QueryRegistry, JoinType, InvalidJoinException
 
 
 @pytest.mark.parametrize(
@@ -99,6 +99,27 @@ def test_joins_with_conditions(join_type: JoinType):
         query
         == f'SELECT "employee_id","store_location" FROM "employees" {join_type} JOIN "payroll" ON employees.payroll_id = payroll.id'
     )
+
+
+@pytest.mark.parametrize("join_type", [JoinType.NATURAL, JoinType.CROSS])
+def test_joins_no_condition(join_type: JoinType):
+    query_builder = QueryRegistry.get_builder("oracle")
+    query_builder.select("employee_id", "store_location").from_("employees").join(
+        "payroll", join_type
+    )
+    query = query_builder.build()
+    assert (
+        query
+        == f'SELECT "employee_id","store_location" FROM "employees" {join_type} JOIN "payroll"'
+    )
+
+
+def test_invalid_join():
+    query_builder = QueryRegistry.get_builder("oracle")
+    with pytest.raises(InvalidJoinException):
+        query_builder.select("employee_id", "store_location").from_("employees").join(
+            "payroll", JoinType.NATURAL, "employees.payroll_id = payroll.id"
+        )
 
 
 @pytest.mark.parametrize(

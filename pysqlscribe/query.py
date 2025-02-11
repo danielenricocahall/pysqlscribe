@@ -1,5 +1,6 @@
 import operator
 from abc import abstractmethod, ABC
+from copy import copy
 from enum import Enum
 from functools import reduce
 from typing import Any, Dict, Self, Callable, Tuple
@@ -96,7 +97,14 @@ class JoinNode(Node):
         super().__init__(state)
         self.join_type = state.get("join_type", JoinType.INNER)
         self.table = state["table"]
-        self.condition = state.get("condition")
+        if (condition := state.get("condition")) and self.join_type in (
+            JoinType.NATURAL,
+            JoinType.CROSS,
+        ):
+            raise InvalidJoinException(
+                "Conditions need to be supplied for any join which is not NATURAL or CROSS"
+            )
+        self.condition = condition
 
     @property
     def valid_next_nodes(self):
@@ -104,7 +112,9 @@ class JoinNode(Node):
 
     def __str__(self):
         return f"{self.join_type} {JOIN} {self.table} " + (
-            f"ON {self.condition}" if self.join_type != JoinType.NATURAL else ""
+            f"ON {self.condition}"
+            if self.join_type not in (JoinType.NATURAL, JoinType.CROSS)
+            else ""
         )
 
 
@@ -218,11 +228,6 @@ class Query(ABC):
     def join(
         self, table: str, join_type: str = JoinType.INNER, condition: str | None = None
     ) -> Self:
-        if condition and join_type in (JoinType.NATURAL, JoinType.CROSS):
-            raise InvalidJoinException(
-                "Conditions need to be supplied for any join which is not NATURAL or CROSS"
-            )
-
         self.node.add(
             JoinNode(
                 {
@@ -339,7 +344,7 @@ class QueryRegistry:
 
     @classmethod
     def get_builder(cls, key: str) -> Query:
-        return cls.builders[key]
+        return copy(cls.builders[key])
 
 
 @QueryRegistry.register("mysql")
