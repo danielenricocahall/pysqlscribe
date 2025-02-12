@@ -23,8 +23,9 @@ class Expression:
 
 
 class Column:
-    def __init__(self, name: str):
+    def __init__(self, name: str, table_name: str):
         self.name = name
+        self.table_name = table_name
 
     @property
     def name(self):
@@ -39,9 +40,15 @@ class Column:
             raise InvalidColumnNameException(f"Invalid column name {column_name}")
         self._name = column_name
 
+    @property
+    def fully_qualified_name(self):
+        return f"{self.table_name}.{self.name}"
+
     def _expression(self, operator: str, other: Self | str | int):
         if isinstance(other, Column):
-            return Expression(self.name, operator, other.name)
+            return Expression(
+                self.fully_qualified_name, operator, other.fully_qualified_name
+            )
         elif isinstance(other, str):
             return Expression(self.name, operator, f"'{other}'")
         elif isinstance(other, int):

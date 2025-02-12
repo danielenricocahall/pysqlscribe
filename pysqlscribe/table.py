@@ -101,7 +101,7 @@ class Table(ABC):
                 delattr(self, column)
         self._columns = columns_
         for column_name in columns_:
-            setattr(self, column_name, Column(column_name))
+            setattr(self, column_name, Column(column_name, self.table_name))
 
 
 MySQLTable = Table.create("mysql")

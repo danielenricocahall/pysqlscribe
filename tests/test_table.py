@@ -64,7 +64,7 @@ def test_table_where_clause_other_column():
     )
     assert (
         query
-        == "SELECT `test_column` FROM `test_table` WHERE test_column > other_test_column"
+        == "SELECT `test_column` FROM `test_table` WHERE test_table.test_column > test_table.other_test_column"
     )
 
 
@@ -106,7 +106,7 @@ def test_table_join_with_conditions(join_type: JoinType):
     )
     assert (
         query
-        == f'SELECT "first_name","last_name","dept" FROM "employee" {join_type} JOIN "payroll" ON id = payroll_id'
+        == f'SELECT "first_name","last_name","dept" FROM "employee" {join_type} JOIN "payroll" ON payroll.id = employee.payroll_id'
     )
 
 
