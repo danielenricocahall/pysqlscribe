@@ -99,7 +99,7 @@ table.select("new_test_column")
 table.new_test_column  # now valid - but `table.test_column` is not anymore
 ```
 
-Additionally, you can reference the column attributes `Table` object when constructing queries. For example, in a `WHERE` clause:
+Additionally, you can reference the `Column` attributes `Table` object when constructing queries. For example, in a `WHERE` clause:
 
 ```python
 from pysqlscribe.table import PostgresTable
@@ -192,26 +192,6 @@ schema.test_table # will return the supplied table object with the name `"test_t
 ```
 
 
-
-# Contributions
-
-Contributions are always welcome, as this is a new and active project.
-
-## Local Environment Setup
-This project currently uses `uv` for convenience, although we currently only have dev dependencies. To create your environment:
-```shell
-uv sync
-```
-
-## Unit Testing
-`pytest` is used for all unit testing. To run the unit tests locally (assuming a local environment is set up):
-```shell
-uv run pytest
-```
-
-Unit tests are executed as part of CI, and the behavior should be consistent with what is observed in local development.
-
-
 # Supported Dialects
 This is anticipated to grow, also there are certainly operations that are missing within dialects.
 - [X] `MySQL`
@@ -226,3 +206,5 @@ This is anticipated to grow, also there are certainly operations that are missin
 - [ ] Support for aliases for tables and columns
 - [ ] Support subqueries
 - [ ] Improved injection mitigation  
+
+> 💡 Interested in contributing? Check out the [Local Development & Contributions Guide](./CONTRIBUTING.md).
