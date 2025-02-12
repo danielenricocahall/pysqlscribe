@@ -207,4 +207,4 @@ This is anticipated to grow, also there are certainly operations that are missin
 - [ ] Support subqueries
 - [ ] Improved injection mitigation  
 
-> 💡 Interested in contributing? Check out the [Local Development & Contributions Guide](./CONTRIBUTING.md).
+> 💡 Interested in contributing? Check out the [Local Development & Contributions Guide](https://github.com/danielenricocahall/pysqlscribe/blob/main/CONTRIBUTING.md).
