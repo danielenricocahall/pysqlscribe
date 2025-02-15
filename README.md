@@ -160,7 +160,7 @@ table = PostgresTable("test_table", schema="test_schema")
 another_table = PostgresTable("another_test_table", schema="test_schema")
 ```
 
-Instead of supplying a `dialect` directly to `Schema`, you can also set the environment variable `PYQUERY_BUILDER_DIALECT`:
+Instead of supplying a `dialect` directly to `Schema`, you can also set the environment variable `PYSQLSCRIBE_BUILDER_DIALECT`:
 
 ```shell
 export PYSQLSCRIBE_BUILDER_DIALECT = 'postgres'
