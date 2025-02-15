@@ -30,5 +30,5 @@ exclude = [
   "/.*",
   "/tests",
     "README.md",
-
+    "CONTRIBUTING.md"
 ]
