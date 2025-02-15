@@ -53,7 +53,7 @@ class Schema:
     def dialect(self, dialect_: str | None):
         if dialect_:
             self._dialect = dialect_
-        elif env_set_dialect := os.environ.get("PYQUERY_BUILDER_DIALECT"):
+        elif env_set_dialect := os.environ.get("PYSQLSCRIBE_BUILDER_DIALECT"):
             self._dialect = env_set_dialect
         else:
             # the user may have provided no `dialect` - this is fine if they're directly supplying `Table` objects.

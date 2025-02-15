@@ -13,7 +13,7 @@ def test_schema_create_tables():
 
 
 def test_schema_dialect_environment_provided(monkeypatch):
-    monkeypatch.setenv("PYQUERY_BUILDER_DIALECT", "sqlite")
+    monkeypatch.setenv("PYSQLSCRIBE_BUILDER_DIALECT", "sqlite")
     schema = Schema("test_schema", ["test_table", "another_test_table"])
     assert len(schema.tables) == 2
     assert all(isinstance(table, SqliteTable) for table in schema.tables)
