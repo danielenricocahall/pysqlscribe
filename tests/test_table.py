@@ -13,6 +13,10 @@ from pysqlscribe.scalar_functions import (
     CEIL,
     round_,
     ROUND,
+    upper,
+    UPPER,
+    lower,
+    LOWER,
 )
 from pysqlscribe.table import (
     MySQLTable,
@@ -189,7 +193,15 @@ def test_table_join_without_conditions(join_type: JoinType):
 
 @pytest.mark.parametrize(
     "scalar_function,str_function",
-    [(abs_, ABS), (floor, FLOOR), (sqrt, SQRT), (ceil, CEIL), (round_, ROUND)],
+    [
+        (abs_, ABS),
+        (floor, FLOOR),
+        (sqrt, SQRT),
+        (ceil, CEIL),
+        (round_, ROUND),
+        (upper, UPPER),
+        (lower, LOWER),
+    ],
 )
 def test_scalar_functions(scalar_function, str_function):
     payroll_table = PostgresTable("payroll", "id", "salary", "category")

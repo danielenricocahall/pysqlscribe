@@ -10,7 +10,8 @@ AGGREGATE_IDENTIFIER_REGEX = re.compile(
 )
 
 SCALAR_IDENTIFIER_REGEX = re.compile(
-    r"^(ABS|CEIL|SQRT|ROUND|FLOOR)\((\*|\d+|[\w]+)\)$", re.IGNORECASE
+    r"^(ABS|CEIL|SQRT|ROUND|FLOOR|UPPER|LOWER|LENGTH|SIGN)\((\*|\d+|[\w]+)\)$",
+    re.IGNORECASE,
 )
 
 ALIAS_REGEX = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")

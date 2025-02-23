@@ -5,6 +5,10 @@ FLOOR = "FLOOR"
 CEIL = "CEIl"
 SQRT = "SQRT"
 ROUND = "ROUND"
+SIGN = "SIGN"
+LENGTH = "LENGTH"
+UPPER = "UPPER"
+LOWER = "LOWER"
 
 
 def _scalar_function(scalar_function: str, column: Column | str | int) -> Column | str:
@@ -27,6 +31,22 @@ def ceil(column: Column | str):
 
 def sqrt(column: Column | str):
     return _scalar_function(SQRT, column)
+
+
+def sign(column: Column | str):
+    return _scalar_function(SIGN, column)
+
+
+def length(column: Column | str):
+    return _scalar_function(LENGTH, column)
+
+
+def upper(column: Column | str):
+    return _scalar_function(UPPER, column)
+
+
+def lower(column: Column | str):
+    return _scalar_function(LOWER, column)
 
 
 def round_(column: Column | str, decimals: int | None = None):
