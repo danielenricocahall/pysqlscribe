@@ -281,12 +281,12 @@ class Query(ABC):
 
     def limit(self, n: int | str):
         self.node.add(LimitNode({"limit": int(n)}))
-        self.node = self.node = self.node.next_
+        self.node = self.node.next_
         return self
 
     def offset(self, n: int | str):
         self.node.add(OffsetNode({"offset": int(n)}))
-        self.node = self.node = self.node.next_
+        self.node = self.node.next_
         return self
 
     def group_by(self, *args) -> Self:
