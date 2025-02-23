@@ -254,7 +254,9 @@ class Query(ABC):
             JoinNode(
                 {
                     "join_type": join_type.upper(),
-                    "table": self.escape_identifier(table),
+                    "table": reconcile_args_into_string(
+                        table, escape_identifier=self.escape_identifier
+                    ),
                     "condition": condition,
                 }
             )

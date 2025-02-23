@@ -71,7 +71,7 @@ class Table(ABC, AliasMixin):
                 condition: str | None = None,
             ) -> Self:
                 if isinstance(table, Table):
-                    table = table.table_name
+                    table = f"{table.table_name}{table.alias}"
                 return super().join(table, join_type, condition)
 
         # Set a meaningful class name
@@ -103,7 +103,16 @@ class Table(ABC, AliasMixin):
                 delattr(self, column)
         self._columns = columns_
         for column_name in columns_:
-            setattr(self, column_name, Column(column_name, self.table_name))
+            setattr(
+                self, column_name, Column(column_name, self._alias or self.table_name)
+            )
+
+    def as_(self, alias: str) -> Self:
+        super().as_(alias)
+        # ensure that we re-assign our column attributes with the correct fully qualified name (including
+        # the alias instead of the full table name)
+        self.columns = self.columns
+        return self
 
 
 MySQLTable = Table.create("mysql")

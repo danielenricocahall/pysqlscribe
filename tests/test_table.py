@@ -64,7 +64,10 @@ def test_table_reassign_columns():
 def test_table_where_clause_fixed_value():
     table = MySQLTable("test_table", "test_column")
     query = table.select("test_column").where(table.test_column > 5).build()
-    assert query == "SELECT `test_column` FROM `test_table` WHERE test_column > 5"
+    assert (
+        query
+        == "SELECT `test_column` FROM `test_table` WHERE test_table.test_column > 5"
+    )
 
 
 def test_table_where_clause_other_column():
@@ -114,7 +117,7 @@ def test_table_group_by_with_column_object():
 def test_table_select_all():
     table = PostgresTable("employee", "first_name", "last_name", "dept", "salary")
     query = table.select("*").where(table.dept == "Sales").build()
-    assert query == "SELECT * FROM \"employee\" WHERE dept = 'Sales'"
+    assert query == "SELECT * FROM \"employee\" WHERE employee.dept = 'Sales'"
 
 
 @pytest.mark.parametrize(
@@ -135,6 +138,33 @@ def test_table_join_with_conditions(join_type: JoinType):
     assert (
         query
         == f'SELECT "first_name","last_name","dept" FROM "employee" {join_type} JOIN "payroll" ON payroll.id = employee.payroll_id'
+    )
+
+
+@pytest.mark.parametrize(
+    "join_type", [JoinType.INNER, JoinType.OUTER, JoinType.LEFT, JoinType.RIGHT]
+)
+def test_table_join_with_alias(join_type: JoinType):
+    employee_table = PostgresTable(
+        "employee", "first_name", "last_name", "dept", "payroll_id"
+    )
+    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    query = (
+        employee_table.as_("e")
+        .select(
+            employee_table.first_name, employee_table.last_name, employee_table.dept
+        )
+        .join(
+            payroll_table.as_("p"),
+            join_type,
+            payroll_table.id == employee_table.payroll_id,
+        )
+        .where(payroll_table.salary > 1000)
+        .build()
+    )
+    assert (
+        query
+        == f'SELECT "first_name","last_name","dept" FROM "employee" AS e {join_type} JOIN "payroll" AS p ON p.id = e.payroll_id WHERE p.salary > 1000'
     )
 
 

@@ -53,9 +53,9 @@ class Column(AliasMixin):
                 self.fully_qualified_name, operator, other.fully_qualified_name
             )
         elif isinstance(other, str):
-            return Expression(self.name, operator, f"'{other}'")
+            return Expression(self.fully_qualified_name, operator, f"'{other}'")
         elif isinstance(other, int):
-            return Expression(self.name, operator, str(other))
+            return Expression(self.fully_qualified_name, operator, str(other))
         raise NotImplementedError(
             "Columns can only be compared to other columns or fixed string values"
         )
