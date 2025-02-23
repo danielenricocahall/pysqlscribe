@@ -1,5 +1,6 @@
 from typing import Self
 
+from pysqlscribe.alias import AliasMixin
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
     AGGREGATE_IDENTIFIER_REGEX,
@@ -22,7 +23,7 @@ class Expression:
         return f"Expression({self.left!r}, {self.operator!r}, {self.right!r})"
 
 
-class Column:
+class Column(AliasMixin):
     def __init__(self, name: str, table_name: str):
         self.name = name
         self.table_name = table_name

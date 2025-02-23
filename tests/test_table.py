@@ -127,3 +127,13 @@ def test_table_join_without_conditions(join_type: JoinType):
         query
         == f'SELECT "first_name","last_name","dept" FROM "employee" {join_type} JOIN "payroll"'
     )
+
+
+def test_aliases():
+    employee_table = PostgresTable(
+        "employee", "first_name", "last_name", "dept", "payroll_id"
+    )
+    query = (
+        employee_table.as_("e").select(employee_table.first_name.as_("name")).build()
+    )
+    assert query == 'SELECT "first_name" FROM "employee" AS e'

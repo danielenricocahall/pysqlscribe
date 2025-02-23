@@ -1,6 +1,7 @@
 from abc import ABC
 from typing import List, Self
 
+from pysqlscribe.alias import AliasMixin
 from pysqlscribe.column import Column
 from pysqlscribe.query import QueryRegistry, JoinType
 from pysqlscribe.regex_patterns import (
@@ -14,7 +15,7 @@ class InvalidColumnsException(Exception): ...
 class InvalidTableNameException(Exception): ...
 
 
-class Table(ABC):
+class Table(ABC, AliasMixin):
     __cache: dict[str, type["Table"]] = {}
 
     def __init__(self, name: str, *columns, schema: str | None = None):
@@ -44,7 +45,8 @@ class Table(ABC):
                     column.name if isinstance(column, Column) else column
                     for column in columns
                 ]
-                return super().select(*columns).from_(self.table_name)
+                table_name = f"{self.table_name}{self.alias}"
+                return super().select(*columns).from_(table_name)
 
             def order_by(self, *columns):
                 columns = [
