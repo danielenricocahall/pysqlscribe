@@ -42,7 +42,9 @@ class Table(ABC, AliasMixin):
 
             def select(self, *columns):
                 columns = [
-                    column.name if isinstance(column, Column) else column
+                    f"{column.name}{column.alias}"
+                    if isinstance(column, Column)
+                    else column
                     for column in columns
                 ]
                 table_name = f"{self.table_name}{self.alias}"

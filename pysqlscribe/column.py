@@ -4,6 +4,7 @@ from pysqlscribe.alias import AliasMixin
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
     AGGREGATE_IDENTIFIER_REGEX,
+    SCALAR_IDENTIFIER_REGEX,
 )
 
 
@@ -37,6 +38,7 @@ class Column(AliasMixin):
         if not (
             VALID_IDENTIFIER_REGEX.match(column_name)
             or AGGREGATE_IDENTIFIER_REGEX.match(column_name)
+            or SCALAR_IDENTIFIER_REGEX.match(column_name)
         ):
             raise InvalidColumnNameException(f"Invalid column name {column_name}")
         self._name = column_name

@@ -1,7 +1,19 @@
 import pytest
 
-from pysqlscribe.aggregate_functions import count
+from pysqlscribe.aggregate_functions import count, max_
 from pysqlscribe.query import JoinType
+from pysqlscribe.scalar_functions import (
+    abs_,
+    floor,
+    ABS,
+    FLOOR,
+    sqrt,
+    SQRT,
+    ceil,
+    CEIL,
+    round_,
+    ROUND,
+)
 from pysqlscribe.table import (
     MySQLTable,
     OracleTable,
@@ -68,18 +80,34 @@ def test_table_where_clause_other_column():
     )
 
 
-def test_table_group_by():
+@pytest.mark.parametrize("agg_column", [1, "first_name"])
+def test_table_group_by(agg_column):
     table = PostgresTable(
         "employee", "first_name", "last_name", "store_location", "salary"
     )
     query = (
-        table.select(table.store_location, count(1))
+        table.select(table.store_location, count(agg_column))
         .group_by(table.store_location)
         .build()
     )
     assert (
         query
-        == 'SELECT "store_location",COUNT(1) FROM "employee" GROUP BY "store_location"'
+        == f'SELECT "store_location",COUNT({agg_column}) FROM "employee" GROUP BY "store_location"'
+    )
+
+
+def test_table_group_by_with_column_object():
+    table = PostgresTable(
+        "employee", "first_name", "last_name", "store_location", "salary"
+    )
+    query = (
+        table.select(table.store_location, max_(table.salary))
+        .group_by(table.store_location)
+        .build()
+    )
+    assert (
+        query
+        == 'SELECT "store_location",MAX(salary) FROM "employee" GROUP BY "store_location"'
     )
 
 
@@ -129,6 +157,16 @@ def test_table_join_without_conditions(join_type: JoinType):
     )
 
 
+@pytest.mark.parametrize(
+    "scalar_function,str_function",
+    [(abs_, ABS), (floor, FLOOR), (sqrt, SQRT), (ceil, CEIL), (round_, ROUND)],
+)
+def test_scalar_functions(scalar_function, str_function):
+    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    query = payroll_table.select(scalar_function(payroll_table.salary)).build()
+    assert query == f'SELECT {str_function}(salary) FROM "payroll"'
+
+
 def test_aliases():
     employee_table = PostgresTable(
         "employee", "first_name", "last_name", "dept", "payroll_id"
@@ -136,4 +174,4 @@ def test_aliases():
     query = (
         employee_table.as_("e").select(employee_table.first_name.as_("name")).build()
     )
-    assert query == 'SELECT "first_name" FROM "employee" AS e'
+    assert query == 'SELECT "first_name" AS name FROM "employee" AS e'
