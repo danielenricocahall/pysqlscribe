@@ -1,11 +1,5 @@
 from pysqlscribe.column import Column
-
-MAX = "MAX"
-MIN = "MIN"
-AVG = "AVG"
-COUNT = "COUNT"
-SUM = "SUM"
-DISTINCT = "DISTINCT"
+from pysqlscribe.functions import AggregateFunctions
 
 
 def _aggregate_function(agg_function: str, column: Column | str | int):
@@ -15,24 +9,24 @@ def _aggregate_function(agg_function: str, column: Column | str | int):
 
 
 def max_(column: Column | str) -> Column | str:
-    return _aggregate_function(MAX, column)
+    return _aggregate_function(AggregateFunctions.MAX, column)
 
 
 def sum_(column: Column | str) -> Column:
-    return _aggregate_function(SUM, column)
+    return _aggregate_function(AggregateFunctions.SUM, column)
 
 
 def min_(column: Column | str) -> Column | str:
-    return _aggregate_function(MIN, column)
+    return _aggregate_function(AggregateFunctions.MIN, column)
 
 
 def avg(column: Column | str) -> Column | str:
-    return _aggregate_function(AVG, column)
+    return _aggregate_function(AggregateFunctions.AVG, column)
 
 
 def count(column: Column | str | int) -> Column | str:
-    return _aggregate_function(COUNT, column)
+    return _aggregate_function(AggregateFunctions.COUNT, column)
 
 
 def distinct(column: Column | str) -> Column | str:
-    return _aggregate_function(DISTINCT, column)
+    return _aggregate_function(AggregateFunctions.DISTINCT, column)

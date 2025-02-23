@@ -1,16 +1,17 @@
 import re
 
+from pysqlscribe.functions import ScalarFunctions, AggregateFunctions
 
 VALID_IDENTIFIER_REGEX = re.compile(
     r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)?$"
 )
 
 AGGREGATE_IDENTIFIER_REGEX = re.compile(
-    r"^(COUNT|SUM|AVG|MIN|MAX)\((\*|\d+|[\w]+)\)$", re.IGNORECASE
+    rf"^({'|'.join(AggregateFunctions)})\((\*|\d+|[\w]+)\)$", re.IGNORECASE
 )
 
 SCALAR_IDENTIFIER_REGEX = re.compile(
-    r"^(ABS|CEIL|SQRT|ROUND|FLOOR|UPPER|LOWER|LENGTH|SIGN)\((\*|\d+|[\w]+)\)$",
+    rf"^({'|'.join(ScalarFunctions)})\((\*|\d+|[\w]+)\)$",
     re.IGNORECASE,
 )
 
