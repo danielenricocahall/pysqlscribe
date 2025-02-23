@@ -7,8 +7,6 @@ from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
 )
 
-EVERYTHING = "*"
-
 
 class InvalidColumnsException(Exception): ...
 
