@@ -217,7 +217,7 @@ Output:
 SELECT UPPER(store_location),MAX(salary) FROM "employee" GROUP BY "store_location"
 ```
 
-# Aliases
+## Aliases
 For aliasing tables and columns, you can use the `as_` method on the `Table` or `Column` objects:
 
 ```python
