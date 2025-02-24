@@ -114,32 +114,29 @@ Output:
 SELECT "first_name","last_name","location" FROM "employee" WHERE salary > 1000
 ```
 
-For computing aggregates (e.g; `MAX`, `AVG`, `COUNT`), we have functions available in the `aggregate_functions` module which will accept both strings or columns:
+and in a `JOIN`:
 
 ```python
 from pysqlscribe.table import PostgresTable
-from pysqlscribe.aggregate_functions import max_
-table = PostgresTable(
-    "employee", "first_name", "last_name", "store_location", "salary"
-)
+
+employee_table = PostgresTable(
+        "employee", "first_name", "last_name", "dept", "payroll_id"
+    )
+payroll_table = PostgresTable("payroll", "id", "salary", "category")
 query = (
-    table.select(table.store_location, max_(table.salary))
-    .group_by(table.store_location)
-    .build()
-)
-# Equivalently:
-query_with_strs = (
-    table.select("store_location", max_("salary"))
-    .group_by("store_location")
+    employee_table.select(
+        employee_table.first_name, employee_table.last_name, employee_table.dept
+    )
+    .join(payroll_table, "inner", payroll_table.id == employee_table.payroll_id)
     .build()
 )
 ```
+
 Output:
 
 ```postgresql
-SELECT "store_location",MAX(salary) FROM "employee" GROUP BY "store_location"
+SELECT "first_name","last_name","dept" FROM "employee" INNER JOIN "payroll" ON payroll.id = employee.payroll_id
 ```
-
 
 ## Schema
 For associating multiple `Table`s with a single schema, you can use the `Schema`:
@@ -191,7 +188,54 @@ schema = Schema("test_schema", [table, another_table])
 schema.test_table # will return the supplied table object with the name `"test_table"`
 ```
 
+## Functions
 
+For computing aggregations (e.g; `MAX`, `AVG`, `COUNT`) or performing scalar operations (e.g; `ABS`, `SQRT`, `UPPER`), we have functions available in the `aggregate_functions` and `scalar_functions` modules which will accept both strings or columns:
+
+```python
+from pysqlscribe.table import PostgresTable
+from pysqlscribe.aggregate_functions import max_
+from pysqlscribe.scalar_functions import upper
+table = PostgresTable(
+    "employee", "first_name", "last_name", "store_location", "salary"
+)
+query = (
+    table.select(upper(table.store_location), max_(table.salary))
+    .group_by(table.store_location)
+    .build()
+)
+# Equivalently:
+query_with_strs = (
+    table.select(upper("store_location"), max_("salary"))
+    .group_by("store_location")
+    .build()
+)
+```
+Output:
+
+```postgresql
+SELECT UPPER(store_location),MAX(salary) FROM "employee" GROUP BY "store_location"
+```
+
+# Aliases
+For aliasing tables and columns, you can use the `as_` method on the `Table` or `Column` objects:
+
+```python
+from pysqlscribe.table import PostgresTable
+
+employee_table = PostgresTable(
+    "employee", "first_name", "last_name", "dept", "payroll_id"
+)
+query = (
+    employee_table.as_("e").select(employee_table.first_name.as_("name")).build()
+)
+```
+
+Output:
+
+```postgresql
+SELECT "first_name" AS name FROM "employee" AS e
+```
 # Supported Dialects
 This is anticipated to grow, also there are certainly operations that are missing within dialects.
 - [X] `MySQL`
