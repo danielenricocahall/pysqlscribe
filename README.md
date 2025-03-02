@@ -236,6 +236,50 @@ Output:
 ```postgresql
 SELECT "first_name" AS name FROM "employee" AS e
 ```
+
+## Escaping Identifiers
+By default, all identifiers are escaped using the corresponding dialect's escape character, as can be seen in various examples. This is done to prevent SQL injection attacks and to ensure we handle different column name variations (e.g; a column with a space in the name, a column name which coincides with a keyword). Admittedly, this also makes the queries less aesthetic. If you want to disable this behavior, you can use the `disable_escape_identifiers` method:
+
+
+```python
+from pysqlscribe.query import QueryRegistry
+query_builder = QueryRegistry.get_builder("mysql").disable_escape_identifiers()
+query = (
+    query_builder.select("test_column", "another_test_column")
+    .from_("test_table")
+    .where("test_column = 1", "another_test_column > 2")
+    .build()
+)
+```
+Output:
+
+```mysql
+SELECT test_column,another_test_column FROM test_table WHERE test_column = 1 AND another_test_column > 2 # look ma, no backticks!
+```
+
+If you want to switch preferences, there's a corresponding `enable_escape_identifiers` method:
+
+```python
+from pysqlscribe.query import QueryRegistry
+
+query_builder = QueryRegistry.get_builder("mysql").disable_escape_identifiers()
+query = (
+    query_builder.select("test_column", "another_test_column")
+    .enable_escape_identifiers()
+    .from_("test_table")
+    .where("test_column = 1", "another_test_column > 2")
+    .build()
+)
+```
+
+Output:
+
+```mysql
+SELECT test_column,another_test_column FROM `test_table` WHERE test_column = 1 AND another_test_column > 2 # note the table name is escaped while the columns are not
+```
+
+Alternatively, if you don't want to change existing code or you have several `Query` or `Table` objects you want to apply this setting to (and don't plan on swapping settings), you can set the environment variable `PYSQLSCRIBE_ESCAPE_IDENTIFIERS` to `"False"` or `"0"`.
+
 # Supported Dialects
 This is anticipated to grow, also there are certainly operations that are missing within dialects.
 - [X] `MySQL`
@@ -249,5 +293,6 @@ This is anticipated to grow, also there are certainly operations that are missin
 - [ ] Support `OFFSET` for Oracle and SQLServer
 - [ ] Support subqueries
 - [ ] Improved injection mitigation  
+- [ ] Support more aggregate and scalar functions
 
 > 💡 Interested in contributing? Check out the [Local Development & Contributions Guide](https://github.com/danielenricocahall/pysqlscribe/blob/main/CONTRIBUTING.md).

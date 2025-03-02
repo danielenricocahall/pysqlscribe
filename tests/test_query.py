@@ -135,3 +135,47 @@ def test_join_where_with_conditions(join_type: JoinType):
         query
         == f'SELECT "employee_id","store_location" FROM "employees" {join_type} JOIN "payroll" ON employees.payroll_id = payroll.id WHERE employee.salary > 10000'
     )
+
+
+def test_disable_escape_identifier():
+    query_builder = QueryRegistry.get_builder("mysql").disable_escape_identifiers()
+    query = (
+        query_builder.select("test_column", "another_test_column")
+        .from_("test_table")
+        .where("test_column = 1", "another_test_column > 2")
+        .build()
+    )
+    assert (
+        query
+        == "SELECT test_column,another_test_column FROM test_table WHERE test_column = 1 AND another_test_column > 2"
+    )
+
+
+def test_escape_identifier_switch_preferences():
+    query_builder = QueryRegistry.get_builder("mysql").disable_escape_identifiers()
+    query = (
+        query_builder.select("test_column", "another_test_column")
+        .enable_escape_identifiers()
+        .from_("test_table")
+        .where("test_column = 1", "another_test_column > 2")
+        .build()
+    )
+    assert (
+        query
+        == "SELECT test_column,another_test_column FROM `test_table` WHERE test_column = 1 AND another_test_column > 2"
+    )
+
+
+def test_disable_escape_identifier_with_environment_variable(monkeypatch):
+    monkeypatch.setenv("PYSQLSCRIBE_ESCAPE_IDENTIFIERS", "False")
+    query_builder = QueryRegistry.get_builder("mysql")
+    query = (
+        query_builder.select("test_column", "another_test_column")
+        .from_("test_table")
+        .where("test_column = 1", "another_test_column > 2")
+        .build()
+    )
+    assert (
+        query
+        == "SELECT test_column,another_test_column FROM test_table WHERE test_column = 1 AND another_test_column > 2"
+    )
