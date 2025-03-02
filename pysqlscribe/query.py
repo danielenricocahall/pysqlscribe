@@ -6,6 +6,7 @@ from enum import Enum
 from functools import reduce
 from typing import Any, Dict, Self, Callable, Tuple
 
+from pysqlscribe.expression import Expression
 from pysqlscribe.env_utils import str2bool
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
@@ -14,6 +15,7 @@ from pysqlscribe.regex_patterns import (
     ALIAS_SPLIT_REGEX,
     ALIAS_REGEX,
     SCALAR_IDENTIFIER_REGEX,
+    EXPRESSION_IDENTIFIER_REGEX,
 )
 
 SELECT = "SELECT"
@@ -74,8 +76,10 @@ def reconcile_args_into_string(*args, escape_identifier: Callable[[str], str]) -
 def validate_identifier(identifier: str, escape_identifier) -> str:
     if VALID_IDENTIFIER_REGEX.match(identifier):
         identifier = escape_identifier(identifier)
-    elif AGGREGATE_IDENTIFIER_REGEX.match(identifier) or SCALAR_IDENTIFIER_REGEX.match(
-        identifier
+    elif (
+        AGGREGATE_IDENTIFIER_REGEX.match(identifier)
+        or SCALAR_IDENTIFIER_REGEX.match(identifier)
+        or EXPRESSION_IDENTIFIER_REGEX.match(identifier)
     ):
         identifier = identifier
     else:
@@ -281,6 +285,7 @@ class Query(ABC):
     __escape_identifiers_enabled: bool = True
 
     def select(self, *args) -> Self:
+        args = [str(arg) if isinstance(arg, Expression) else arg for arg in args]
         if WILDCARD_REGEX.match(args[0]):
             columns = args[0]
         else:

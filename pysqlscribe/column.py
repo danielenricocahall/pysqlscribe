@@ -1,6 +1,7 @@
 from typing import Self
 
 from pysqlscribe.alias import AliasMixin
+from pysqlscribe.expression import Expression
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
     AGGREGATE_IDENTIFIER_REGEX,
@@ -9,19 +10,6 @@ from pysqlscribe.regex_patterns import (
 
 
 class InvalidColumnNameException(Exception): ...
-
-
-class Expression:
-    def __init__(self, left: str, operator: str, right: str):
-        self.left = left
-        self.operator = operator
-        self.right = right
-
-    def __str__(self):
-        return f"{self.left} {self.operator} {self.right}"
-
-    def __repr__(self):
-        return f"Expression({self.left!r}, {self.operator!r}, {self.right!r})"
 
 
 class Column(AliasMixin):
@@ -54,7 +42,7 @@ class Column(AliasMixin):
             )
         elif isinstance(other, str):
             return Expression(self.fully_qualified_name, operator, f"'{other}'")
-        elif isinstance(other, int):
+        elif isinstance(other, (int, float)):
             return Expression(self.fully_qualified_name, operator, str(other))
         raise NotImplementedError(
             "Columns can only be compared to other columns or fixed string values"
@@ -80,3 +68,12 @@ class Column(AliasMixin):
 
     def __ne__(self, other):
         return self._expression("<>", other)
+
+    def __add__(self, other):
+        return self._expression("+", other)
+
+    def __sub__(self, other):
+        return self._expression("-", other)
+
+    def __mul__(self, other):
+        return self._expression("*", other)
