@@ -5,7 +5,7 @@ This is `pysqlscribe`, the Python library intended to make building SQL queries 
 
 
 # Motivation
-Other query building libraries, such as [pypika](https://github.com/kayak/pypika) are fantastic but not actively maintained. Some ORM libraries such as `sqlalchemy` offer similar (and awesome) capabilities using the core API, but if you're not already using the library in your application, it's a bit of a large dependency to introduce for the purposes of query building.
+Other query building libraries, such as [pypika](https://github.com/kayak/pypika) are fantastic but not actively maintained. Some ORM libraries such as [sqlalchemy](https://www.sqlalchemy.org/) offer similar (and awesome) capabilities using the core API, but if you're not already using the library in your application, it's a bit of a large dependency to introduce for the purposes of query building.
 
 
 # API
@@ -14,7 +14,7 @@ Other query building libraries, such as [pypika](https://github.com/kayak/pypika
 
 ## Query
 
-A `Query` object can be constructed using the `QueryRegistry`'s `get_builder` if you supply a valid dialect (e.g; "mysql", "postgres", "oracle). For example, "mysql" would be:
+A `Query` object can be constructed using the `QueryRegistry`'s `get_builder` if you supply a valid dialect (e.g; "mysql", "postgres", "oracle"). For example, "mysql" would be:
 
 ```python
 from pysqlscribe.query import QueryRegistry
