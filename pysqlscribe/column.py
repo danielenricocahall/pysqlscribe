@@ -77,3 +77,6 @@ class Column(AliasMixin):
 
     def __ge__(self, other):
         return self._expression(">=", other)
+
+    def __ne__(self, other):
+        return self._expression("<>", other)
