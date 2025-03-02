@@ -270,7 +270,6 @@ query = (
     .where("test_column = 1", "another_test_column > 2")
     .build()
 )
-
 ```
 
 Output:
