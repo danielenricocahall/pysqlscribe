@@ -1,5 +1,14 @@
+from itertools import product
+
 import pytest
-from pysqlscribe.query import QueryRegistry, JoinType, InvalidJoinException
+from pysqlscribe.query import (
+    QueryRegistry,
+    JoinType,
+    InvalidJoinException,
+    UNION,
+    EXCEPT,
+    INTERSECT,
+)
 
 
 @pytest.mark.parametrize(
@@ -178,4 +187,50 @@ def test_disable_escape_identifier_with_environment_variable(monkeypatch):
     assert (
         query
         == "SELECT test_column,another_test_column FROM test_table WHERE test_column = 1 AND another_test_column > 2"
+    )
+
+
+@pytest.mark.parametrize("all_", [True, False])
+def test_union(all_):
+    query_builder = QueryRegistry.get_builder("mysql")
+    another_query_builder = QueryRegistry.get_builder("mysql")
+    query = (
+        query_builder.select("test_column")
+        .from_("test_table")
+        .union(
+            another_query_builder.select("another_test_column").from_(
+                "another_test_table"
+            ),
+            all_=all_,
+        )
+        .build()
+    )
+    union_str = "UNION ALL" if all_ else "UNION"
+    assert (
+        query
+        == f"SELECT `test_column` FROM `test_table` {union_str} SELECT `another_test_column` FROM `another_test_table`"
+    )
+
+
+@pytest.mark.parametrize(
+    "all_, merge_operation", product([True, False], [UNION, EXCEPT, INTERSECT])
+)
+def test_merge_operations(all_, merge_operation):
+    query_builder = QueryRegistry.get_builder("mysql")
+    another_query_builder = QueryRegistry.get_builder("mysql")
+    query = query_builder.select("test_column").from_("test_table")
+    another_query = another_query_builder.select("another_test_column").from_(
+        "another_test_table"
+    )
+    if merge_operation == UNION:
+        query = query.union(another_query, all_=all_)
+    elif merge_operation == EXCEPT:
+        query = query.except_(another_query, all_=all_)
+    elif merge_operation == INTERSECT:
+        query = query.intersect(another_query, all_=all_)
+
+    merge_operation_str = f"{merge_operation} ALL" if all_ else f"{merge_operation}"
+    assert (
+        query.build()
+        == f"SELECT `test_column` FROM `test_table` {merge_operation_str} SELECT `another_test_column` FROM `another_test_table`"
     )

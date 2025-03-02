@@ -27,6 +27,13 @@ FETCH_NEXT = "FETCH NEXT"
 OFFSET = "OFFSET"
 GROUP_BY = "GROUP BY"
 HAVING = "HAVING"
+ALL = "ALL"
+UNION = "UNION"
+UNION_ALL = f"UNION {ALL}"
+EXCEPT = "EXCEPT"
+EXCEPT_ALL = f"EXCEPT {ALL}"
+INTERSECT = "INTERSECT"
+INTERSECT_ALL = f"INTERSECT {ALL}"
 
 
 class JoinType(str, Enum):
@@ -110,7 +117,16 @@ class SelectNode(Node):
 class FromNode(Node):
     @property
     def valid_next_nodes(self):
-        return JoinNode, WhereNode, GroupByNode, OrderByNode, LimitNode
+        return (
+            JoinNode,
+            WhereNode,
+            GroupByNode,
+            OrderByNode,
+            LimitNode,
+            UnionNode,
+            ExceptNode,
+            IntersectNode,
+        )
 
     def __str__(self):
         return f"{FROM} {self.state['tables']}"
@@ -217,6 +233,57 @@ class HavingNode(Node):
                 f"{self.state['conditions']} {AND} {other.state['conditions']}"
             )
             return HavingNode({"conditions": compound_condition})
+
+
+class UnionNode(Node):
+    def __init__(self, state):
+        super().__init__(state)
+        self.query = state["query"]
+        self.all = state.get("all", False)
+
+    @property
+    def valid_next_nodes(self):
+        return ()
+
+    def __str__(self):
+        union_str = UNION if not self.all else UNION_ALL
+        if isinstance(self.query, Query):
+            return f"{union_str} {self.query.build(clear=False)}"
+        return f"{union_str} {self.query}"
+
+
+class ExceptNode(Node):
+    def __init__(self, state):
+        super().__init__(state)
+        self.query = state["query"]
+        self.all = state.get("all", False)
+
+    @property
+    def valid_next_nodes(self):
+        return ()
+
+    def __str__(self):
+        except_str = EXCEPT if not self.all else EXCEPT_ALL
+        if isinstance(self.query, Query):
+            return f"{except_str} {self.query.build(clear=False)}"
+        return f"{except_str} {self.query}"
+
+
+class IntersectNode(Node):
+    def __init__(self, state):
+        super().__init__(state)
+        self.query = state["query"]
+        self.all = state.get("all", False)
+
+    @property
+    def valid_next_nodes(self):
+        return ()
+
+    def __str__(self):
+        intersect_str = INTERSECT if not self.all else INTERSECT_ALL
+        if isinstance(self.query, Query):
+            return f"{intersect_str} {self.query.build(clear=False)}"
+        return f"{intersect_str} {self.query}"
 
 
 class InvalidJoinException(Exception): ...
@@ -334,6 +401,21 @@ class Query(ABC):
             operator.and_, map(lambda arg: HavingNode({"conditions": arg}), args)
         )
         self.node.add(having_node)
+        self.node = self.node.next_
+        return self
+
+    def union(self, query: Self | str, all_: bool = False) -> Self:
+        self.node.add(UnionNode({"query": query, "all": all_}))
+        self.node = self.node.next_
+        return self
+
+    def except_(self, query: Self | str, all_: bool = False) -> Self:
+        self.node.add(ExceptNode({"query": query, "all": all_}))
+        self.node = self.node.next_
+        return self
+
+    def intersect(self, query: Self | str, all_: bool = False) -> Self:
+        self.node.add(IntersectNode({"query": query, "all": all_}))
         self.node = self.node.next_
         return self
 
