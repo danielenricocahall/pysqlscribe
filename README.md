@@ -217,6 +217,52 @@ Output:
 SELECT UPPER(store_location),MAX(salary) FROM "employee" GROUP BY "store_location"
 ```
 
+## Combining Queries
+You can combine queries using the `union`, `intersect`, and `except` methods, providing either another `Query` object or a string:
+```python
+from pysqlscribe.query import QueryRegistry
+query_builder = QueryRegistry.get_builder("mysql")
+another_query_builder = QueryRegistry.get_builder("mysql")
+query = (
+    query_builder.select("test_column", "another_test_column")
+    .from_("test_table")
+    .union(
+        another_query_builder.select("test_column", "another_test_column")
+        .from_("another_test_table")
+    )
+    .build()
+)
+```
+
+Output:
+
+```mysql
+SELECT `test_column`,`another_test_column` FROM `test_table` UNION SELECT `test_column`,`another_test_column` FROM `another_test_table`
+```
+
+to perform `all` for each combination operation, you supply the argument `all_`:
+```python
+
+from pysqlscribe.query import QueryRegistry
+query_builder = QueryRegistry.get_builder("mysql")
+another_query_builder = QueryRegistry.get_builder("mysql")
+query = (
+    query_builder.select("test_column", "another_test_column")
+    .from_("test_table")
+    .union(
+        another_query_builder.select("test_column", "another_test_column")
+        .from_("another_test_table"), all_=True
+    )
+    .build()
+)
+```
+
+Output:
+
+```mysql
+SELECT `test_column`,`another_test_column` FROM `test_table` UNION ALL SELECT `test_column`,`another_test_column` FROM `another_test_table`
+```
+
 ## Aliases
 For aliasing tables and columns, you can use the `as_` method on the `Table` or `Column` objects:
 
