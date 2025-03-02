@@ -213,23 +213,23 @@ def test_union(all_):
 
 
 @pytest.mark.parametrize(
-    "all_, merge_operation", product([True, False], [UNION, EXCEPT, INTERSECT])
+    "all_, combine_operation", product([True, False], [UNION, EXCEPT, INTERSECT])
 )
-def test_merge_operations(all_, merge_operation):
+def test_combine_operations(all_, combine_operation):
     query_builder = QueryRegistry.get_builder("mysql")
     another_query_builder = QueryRegistry.get_builder("mysql")
     query = query_builder.select("test_column").from_("test_table")
     another_query = another_query_builder.select("another_test_column").from_(
         "another_test_table"
     )
-    if merge_operation == UNION:
+    if combine_operation == UNION:
         query = query.union(another_query, all_=all_)
-    elif merge_operation == EXCEPT:
+    elif combine_operation == EXCEPT:
         query = query.except_(another_query, all_=all_)
-    elif merge_operation == INTERSECT:
+    elif combine_operation == INTERSECT:
         query = query.intersect(another_query, all_=all_)
 
-    merge_operation_str = f"{merge_operation} ALL" if all_ else f"{merge_operation}"
+    merge_operation_str = f"{combine_operation} ALL" if all_ else f"{combine_operation}"
     assert (
         query.build()
         == f"SELECT `test_column` FROM `test_table` {merge_operation_str} SELECT `another_test_column` FROM `another_test_table`"
