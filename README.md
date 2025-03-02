@@ -293,5 +293,6 @@ This is anticipated to grow, also there are certainly operations that are missin
 - [ ] Support `OFFSET` for Oracle and SQLServer
 - [ ] Support subqueries
 - [ ] Improved injection mitigation  
+- [ ] Support more aggregate and scalar functions
 
 > 💡 Interested in contributing? Check out the [Local Development & Contributions Guide](https://github.com/danielenricocahall/pysqlscribe/blob/main/CONTRIBUTING.md).
