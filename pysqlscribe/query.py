@@ -1,10 +1,12 @@
 import operator
+import os
 from abc import abstractmethod, ABC
 from copy import copy
 from enum import Enum
 from functools import reduce
 from typing import Any, Dict, Self, Callable, Tuple
 
+from pysqlscribe.env_utils import str2bool
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
     AGGREGATE_IDENTIFIER_REGEX,
@@ -222,6 +224,7 @@ class InvalidJoinException(Exception): ...
 
 class Query(ABC):
     node: Node | None = None
+    __escape_identifiers_enabled: bool = True
 
     def select(self, *args) -> Self:
         if WILDCARD_REGEX.match(args[0]):
@@ -351,8 +354,27 @@ class Query(ABC):
     def __str__(self):
         return self.build(clear=False)
 
+    def disable_escape_identifiers(self):
+        self.__escape_identifiers_enabled = False
+        return self
+
+    def enable_escape_identifiers(self):
+        self.__escape_identifiers_enabled = True
+        return self
+
+    @property
+    def escape_identifiers_enabled(self):
+        if not str2bool(os.environ.get("PYSQLSCRIBE_ESCAPE_IDENTIFIERS", "true")):
+            return False
+        return self.__escape_identifiers_enabled
+
     @abstractmethod
-    def escape_identifier(self, identifier: str): ...
+    def _escape_identifier(self, identifier: str): ...
+
+    def escape_identifier(self, identifier: str):
+        if not self.escape_identifiers_enabled:
+            return identifier
+        return self._escape_identifier(identifier)
 
 
 class QueryRegistry:
@@ -373,13 +395,13 @@ class QueryRegistry:
 
 @QueryRegistry.register("mysql")
 class MySQLQuery(Query):
-    def escape_identifier(self, identifier: str) -> str:
+    def _escape_identifier(self, identifier: str) -> str:
         return f"`{identifier}`"
 
 
 @QueryRegistry.register("oracle")
 class OracleQuery(Query):
-    def escape_identifier(self, identifier: str) -> str:
+    def _escape_identifier(self, identifier: str) -> str:
         return f'"{identifier}"'
 
     def limit(self, n: int | str):
@@ -390,11 +412,11 @@ class OracleQuery(Query):
 
 @QueryRegistry.register("postgres")
 class PostgreSQLQuery(Query):
-    def escape_identifier(self, identifier: str) -> str:
+    def _escape_identifier(self, identifier: str) -> str:
         return f'"{identifier}"'
 
 
 @QueryRegistry.register("sqlite")
 class SQLiteQuery(Query):
-    def escape_identifier(self, identifier: str) -> str:
+    def _escape_identifier(self, identifier: str) -> str:
         return f'"{identifier}"'
