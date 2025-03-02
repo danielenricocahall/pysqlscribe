@@ -235,55 +235,42 @@ class HavingNode(Node):
             return HavingNode({"conditions": compound_condition})
 
 
-class UnionNode(Node):
+class CombineNode(Node, ABC):
     def __init__(self, state):
         super().__init__(state)
         self.query = state["query"]
         self.all = state.get("all", False)
 
     @property
-    def valid_next_nodes(self):
-        return ()
-
-    def __str__(self):
-        union_str = UNION if not self.all else UNION_ALL
-        if isinstance(self.query, Query):
-            return f"{union_str} {self.query.build(clear=False)}"
-        return f"{union_str} {self.query}"
-
-
-class ExceptNode(Node):
-    def __init__(self, state):
-        super().__init__(state)
-        self.query = state["query"]
-        self.all = state.get("all", False)
+    @abstractmethod
+    def operation(self): ...
 
     @property
     def valid_next_nodes(self):
         return ()
 
     def __str__(self):
-        except_str = EXCEPT if not self.all else EXCEPT_ALL
         if isinstance(self.query, Query):
-            return f"{except_str} {self.query.build(clear=False)}"
-        return f"{except_str} {self.query}"
+            return f"{self.operation} {self.query.build(clear=False)}"
+        return f"{self.operation} {self.query}"
 
 
-class IntersectNode(Node):
-    def __init__(self, state):
-        super().__init__(state)
-        self.query = state["query"]
-        self.all = state.get("all", False)
-
+class UnionNode(CombineNode):
     @property
-    def valid_next_nodes(self):
-        return ()
+    def operation(self):
+        return UNION if not self.all else UNION_ALL
 
-    def __str__(self):
-        intersect_str = INTERSECT if not self.all else INTERSECT_ALL
-        if isinstance(self.query, Query):
-            return f"{intersect_str} {self.query.build(clear=False)}"
-        return f"{intersect_str} {self.query}"
+
+class ExceptNode(CombineNode):
+    @property
+    def operation(self):
+        return EXCEPT if not self.all else EXCEPT_ALL
+
+
+class IntersectNode(CombineNode):
+    @property
+    def operation(self):
+        return INTERSECT if not self.all else INTERSECT_ALL
 
 
 class InvalidJoinException(Exception): ...
