@@ -6,7 +6,6 @@ from enum import Enum
 from functools import reduce
 from typing import Any, Dict, Self, Callable, Tuple
 
-from pysqlscribe.expression import Expression
 from pysqlscribe.env_utils import str2bool
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
@@ -285,7 +284,6 @@ class Query(ABC):
     __escape_identifiers_enabled: bool = True
 
     def select(self, *args) -> Self:
-        args = [str(arg) if isinstance(arg, Expression) else arg for arg in args]
         if WILDCARD_REGEX.match(args[0]):
             columns = args[0]
         else:
