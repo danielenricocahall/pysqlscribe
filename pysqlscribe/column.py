@@ -64,12 +64,12 @@ class Column(AliasMixin):
 
     def _arithmetic_expression(self, operator: str, other: Self | str | int):
         if isinstance(other, Column):
-            return CombinedColumn(
+            return ExpressionColumn(
                 f"{self.fully_qualified_name} {operator} {other.fully_qualified_name}",
                 self.table_name,
             )
         else:
-            return CombinedColumn(
+            return ExpressionColumn(
                 f"{self.fully_qualified_name} {operator} {other}", self.table_name
             )
 
@@ -104,7 +104,7 @@ class Column(AliasMixin):
         return self._arithmetic_expression("*", other)
 
 
-class CombinedColumn(Column):
+class ExpressionColumn(Column):
     """Representation of a column that is the result of an arithmetic operation. Main benefit is to ensure the
     fully qualified name doesn't prepend the table name each time."""
 

@@ -2,7 +2,7 @@ from pysqlscribe.column import (
     Column,
     Expression,
     InvalidColumnNameException,
-    CombinedColumn,
+    ExpressionColumn,
 )
 import pytest
 
@@ -42,15 +42,15 @@ def test_column_arithmetic():
     col2 = Column("column2", "table2")
 
     result_add = col1 + col2
-    assert isinstance(result_add, CombinedColumn)
+    assert isinstance(result_add, ExpressionColumn)
     assert str(result_add) == "table1.column1 + table2.column2"
 
     result_sub = col1 - 10
-    assert isinstance(result_sub, CombinedColumn)
+    assert isinstance(result_sub, ExpressionColumn)
     assert str(result_sub) == "table1.column1 - 10"
 
     result_mul = col1 * col2
-    assert isinstance(result_mul, CombinedColumn)
+    assert isinstance(result_mul, ExpressionColumn)
     assert str(result_mul) == "table1.column1 * table2.column2"
 
 

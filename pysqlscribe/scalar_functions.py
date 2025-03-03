@@ -1,11 +1,11 @@
-from pysqlscribe.column import Column
+from pysqlscribe.column import Column, ExpressionColumn
 from pysqlscribe.functions import ScalarFunctions
 
 
 def _scalar_function(scalar_function: str, column: Column | str | int) -> Column | str:
     if not isinstance(column, Column):
         return f"{scalar_function}({column})"
-    return Column(f"{scalar_function}({column.name})", column.table_name)
+    return ExpressionColumn(f"{scalar_function}({column.name})", column.table_name)
 
 
 def abs_(column: Column | str):
@@ -45,6 +45,16 @@ def round_(column: Column | str, decimals: int | None = None):
         return _scalar_function(ScalarFunctions.ROUND, column)
     if not isinstance(column, Column):
         return f"{ScalarFunctions.ROUND}({column}, {decimals})"
-    return Column(
+    return ExpressionColumn(
         f"{ScalarFunctions.ROUND}({column.name}, {decimals})", column.table_name
     )
+
+
+def concat(*args: Column | str | int):
+    if all(isinstance(arg, Column) for arg in args):
+        return ExpressionColumn(
+            f"{ScalarFunctions.CONCAT}({', '.join(arg.name for arg in args)})",
+            args[0].table_name,
+        )
+    args = [f"'{arg}'" if not isinstance(arg, Column) else str(arg) for arg in args]
+    return f"{ScalarFunctions.CONCAT}({', '.join(args)})"
