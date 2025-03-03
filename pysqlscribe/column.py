@@ -1,13 +1,25 @@
 from typing import Self
 
 from pysqlscribe.alias import AliasMixin
-from pysqlscribe.expression import Expression
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
     AGGREGATE_IDENTIFIER_REGEX,
     SCALAR_IDENTIFIER_REGEX,
     EXPRESSION_IDENTIFIER_REGEX,
 )
+
+
+class Expression:
+    def __init__(self, left: str, operator: str, right: str):
+        self.left = left
+        self.operator = operator
+        self.right = right
+
+    def __str__(self):
+        return f"{self.left} {self.operator} {self.right}"
+
+    def __repr__(self):
+        return f"Expression({self.left!r}, {self.operator!r}, {self.right!r})"
 
 
 class InvalidColumnNameException(Exception): ...
