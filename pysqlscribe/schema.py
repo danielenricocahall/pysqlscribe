@@ -8,9 +8,6 @@ from pysqlscribe.table import Table
 class InvalidSchemaNameException(Exception): ...
 
 
-class DialectNotSpecifiedException(Exception): ...
-
-
 class Schema:
     def __init__(
         self,
