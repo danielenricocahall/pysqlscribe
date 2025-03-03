@@ -105,6 +105,9 @@ class Column(AliasMixin):
 
 
 class CombinedColumn(Column):
+    """Representation of a column that is the result of an arithmetic operation. Main benefit is to ensure the
+    fully qualified name doesn't prepend the table name each time."""
+
     @property
     def fully_qualified_name(self):
         return self.name
