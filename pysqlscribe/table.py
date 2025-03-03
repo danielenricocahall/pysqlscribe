@@ -3,7 +3,6 @@ from typing import List, Self
 
 from pysqlscribe.alias import AliasMixin
 from pysqlscribe.column import Column
-from pysqlscribe.expression import Expression
 from pysqlscribe.query import QueryRegistry, JoinType
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
@@ -42,14 +41,12 @@ class Table(ABC, AliasMixin):
                 Table.__init__(self, name, *fields, schema=schema)
 
             def select(self, *columns):
-                def convert_to_string(column):
-                    if isinstance(column, Column):
-                        return f"{column.name}{column.alias}"
-                    elif isinstance(column, Expression):
-                        return str(column)
-                    return column
-
-                columns = list(map(convert_to_string, columns))
+                columns = [
+                    f"{column.name}{column.alias}"
+                    if isinstance(column, Column)
+                    else column
+                    for column in columns
+                ]
                 table_name = f"{self.table_name}{self.alias}"
                 return super().select(*columns).from_(table_name)
 

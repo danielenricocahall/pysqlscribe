@@ -15,11 +15,12 @@ SCALAR_IDENTIFIER_REGEX = re.compile(
     re.IGNORECASE,
 )
 
-COLUMN_IDENTIFIER_REGEX = r"[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)?"
+COLUMN_IDENTIFIER_REGEX = r"[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*"
 
 EXPRESSION_IDENTIFIER_REGEX = re.compile(
-    rf"^{COLUMN_IDENTIFIER_REGEX}\s*[\+\-\*/]\s*({COLUMN_IDENTIFIER_REGEX}|\d+(\.\d+)?)$"
+    rf"^\s*({COLUMN_IDENTIFIER_REGEX}|\d+(\.\d+)?)(\s*[\+\-\*/]\s*({COLUMN_IDENTIFIER_REGEX}|\d+(\.\d+)?))*\s*$"
 )
+
 
 ALIAS_REGEX = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
