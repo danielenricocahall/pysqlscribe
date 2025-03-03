@@ -188,6 +188,39 @@ schema = Schema("test_schema", [table, another_table])
 schema.test_table # will return the supplied table object with the name `"test_table"`
 ```
 
+## Arithmetic Operations
+Arithmetic operations can be performed on columns, both on `Column` objects and scalar values:
+
+```python
+from pysqlscribe.table import MySQLTable
+
+table = MySQLTable("employees", "salary", "bonus", "lti")
+query = table.select(
+    (table.salary + table.bonus + table.lti).as_("total_compensation")
+).build()
+```
+
+Output:
+
+```mysql
+SELECT employees.salary + employees.bonus + employees.lti AS total_compensation FROM `employees` 
+```
+
+```python
+from pysqlscribe.table import MySQLTable
+
+table = MySQLTable("employees", "salary", "bonus", "lti")
+query = table.select((table.salary * 0.75).as_("salary_after_taxes")).build()
+```
+
+
+Output:
+
+```mysql
+SELECT employees.salary * 0.75 AS salary_after_taxes FROM `employees`
+```
+
+
 ## Functions
 
 For computing aggregations (e.g; `MAX`, `AVG`, `COUNT`) or performing scalar operations (e.g; `ABS`, `SQRT`, `UPPER`), we have functions available in the `aggregate_functions` and `scalar_functions` modules which will accept both strings or columns:
