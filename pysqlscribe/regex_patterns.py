@@ -11,9 +11,17 @@ AGGREGATE_IDENTIFIER_REGEX = re.compile(
 )
 
 SCALAR_IDENTIFIER_REGEX = re.compile(
-    rf"^({'|'.join(ScalarFunctions)})\((\*|\d+|[\w]+)\)$",
+    rf"^({'|'.join(ScalarFunctions)})\(\s*(\*|\d+|\w+|'.*?')\s*(?:,\s*(\*|\d+|\w+|'.*?')\s*)*\)$",
     re.IGNORECASE,
 )
+
+
+COLUMN_IDENTIFIER_REGEX = r"[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*"
+
+EXPRESSION_IDENTIFIER_REGEX = re.compile(
+    rf"^\s*({COLUMN_IDENTIFIER_REGEX}|\d+(\.\d+)?)(\s*[\+\-\*/]\s*({COLUMN_IDENTIFIER_REGEX}|\d+(\.\d+)?))*\s*$"
+)
+
 
 ALIAS_REGEX = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 

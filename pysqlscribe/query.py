@@ -14,6 +14,7 @@ from pysqlscribe.regex_patterns import (
     ALIAS_SPLIT_REGEX,
     ALIAS_REGEX,
     SCALAR_IDENTIFIER_REGEX,
+    EXPRESSION_IDENTIFIER_REGEX,
 )
 
 SELECT = "SELECT"
@@ -74,8 +75,10 @@ def reconcile_args_into_string(*args, escape_identifier: Callable[[str], str]) -
 def validate_identifier(identifier: str, escape_identifier) -> str:
     if VALID_IDENTIFIER_REGEX.match(identifier):
         identifier = escape_identifier(identifier)
-    elif AGGREGATE_IDENTIFIER_REGEX.match(identifier) or SCALAR_IDENTIFIER_REGEX.match(
-        identifier
+    elif (
+        AGGREGATE_IDENTIFIER_REGEX.match(identifier)
+        or SCALAR_IDENTIFIER_REGEX.match(identifier)
+        or EXPRESSION_IDENTIFIER_REGEX.match(identifier)
     ):
         identifier = identifier
     else:

@@ -115,3 +115,42 @@ def test_table_join_without_conditions(join_type: JoinType):
         query
         == f'SELECT "first_name","last_name","dept" FROM "employee" {join_type} JOIN "payroll"'
     )
+
+
+def test_column_operations():
+    table = MySQLTable("employees", "salary", "bonus", "lti")
+    query = table.select((table.salary * 0.75).as_("salary_after_taxes")).build()
+    assert (
+        query == "SELECT employees.salary * 0.75 AS salary_after_taxes FROM `employees`"
+    )
+
+
+def test_add_two_columns():
+    table = MySQLTable("employees", "salary", "bonus", "lti")
+    query = table.select((table.salary + table.bonus).as_("total_compensation")).build()
+    assert (
+        query
+        == "SELECT employees.salary + employees.bonus AS total_compensation FROM `employees`"
+    )
+
+
+def test_add_more_than_two_columns():
+    table = MySQLTable("employees", "salary", "bonus", "lti")
+    query = table.select(
+        (table.salary + table.bonus + table.lti).as_("total_compensation")
+    ).build()
+    assert (
+        query
+        == "SELECT employees.salary + employees.bonus + employees.lti AS total_compensation FROM `employees`"
+    )
+
+
+def test_operations_columns_and_numerics():
+    table = MySQLTable("employees", "salary", "bonus")
+    query = table.select(
+        (table.salary * 1.25 + table.bonus).as_("total_compensation")
+    ).build()
+    assert (
+        query
+        == "SELECT employees.salary * 1.25 + employees.bonus AS total_compensation FROM `employees`"
+    )

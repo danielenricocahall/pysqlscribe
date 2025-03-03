@@ -10,6 +10,7 @@ from pysqlscribe.scalar_functions import (
     upper,
     lower,
     ScalarFunctions,
+    concat,
 )
 from pysqlscribe.table import PostgresTable
 
@@ -69,3 +70,25 @@ def test_scalar_functions(scalar_function, str_function):
     payroll_table = PostgresTable("payroll", "id", "salary", "category")
     query = payroll_table.select(scalar_function(payroll_table.salary)).build()
     assert query == f'SELECT {str_function}(salary) FROM "payroll"'
+
+
+def test_concat():
+    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    query = payroll_table.select(concat(payroll_table.salary, "USD")).build()
+    assert query == "SELECT CONCAT(salary, 'USD') FROM \"payroll\""
+
+    query = payroll_table.select(concat(payroll_table.salary, 100)).build()
+    assert query == "SELECT CONCAT(salary, '100') FROM \"payroll\""
+
+    query = payroll_table.select(concat("USD", 100)).build()
+    assert query == "SELECT CONCAT('USD', '100') FROM \"payroll\""
+
+
+def test_concat_with_columns():
+    payroll_table = PostgresTable(
+        "payroll", "first_name", "last_name", "salary", "category"
+    )
+    query = payroll_table.select(
+        concat(payroll_table.first_name, payroll_table.last_name).as_("full_name")
+    ).build()
+    assert query == 'SELECT CONCAT(first_name, last_name) AS full_name FROM "payroll"'

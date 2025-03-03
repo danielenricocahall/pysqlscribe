@@ -23,6 +23,7 @@ class ScalarFunctions(str, Enum):
     LENGTH = "LENGTH"
     UPPER = "UPPER"
     LOWER = "LOWER"
+    CONCAT = "CONCAT"
 
     def __str__(self):
         return self.value
