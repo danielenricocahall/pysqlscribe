@@ -4,7 +4,7 @@ version = "0.3.1"
 description = "A simple Python Library for building relational database queries using objects"
 readme = "README.md"
 authors = [{ name="Daniel Cahall", email="danielenricocahall@gmail.com" }]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = []
 license-files = ["LICENSE"]
 
