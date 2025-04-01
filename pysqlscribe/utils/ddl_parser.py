@@ -1,5 +1,4 @@
 from pysqlscribe.regex_patterns import CONSTRAINT_PREFIX_REGEX, CREATE_TABLE_REGEX
-from pysqlscribe.table import Table
 import re
 
 
@@ -35,16 +34,3 @@ def parse_create_tables(sql_text: str) -> dict[str, dict[str, list[str] | str]]:
         }
 
     return tables
-
-
-def create_tables_from_ddl(sql_text: str, dialect: str) -> dict[str, Table]:
-    TableClass = Table.create(dialect)
-    table_defs = parse_create_tables(sql_text)
-
-    table_objects = {}
-    for name, table_metadata in table_defs.items():
-        cols = table_metadata.get("columns", [])
-        table = TableClass(name, *cols, schema=table_metadata.get("schema", None))
-        table_objects[name] = table
-
-    return table_objects
