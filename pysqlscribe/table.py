@@ -74,6 +74,16 @@ class Table(ABC, AliasMixin):
                     table = f"{table.table_name}{table.alias}"
                 return super().join(table, join_type, condition)
 
+            def insert(self, *columns) -> Self:
+                """
+                Override the insert method to ensure it uses the correct table name.
+                """
+                columns = [
+                    column.name if isinstance(column, Column) else column
+                    for column in columns
+                ]
+                return super().insert(*columns, self.table_name)
+
         # Set a meaningful class name
         DynamicTable.__name__ = class_name
         cls.__cache[class_name] = DynamicTable

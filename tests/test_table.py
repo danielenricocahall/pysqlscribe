@@ -154,3 +154,9 @@ def test_operations_columns_and_numerics():
         query
         == "SELECT employees.salary * 1.25 + employees.bonus AS total_compensation FROM `employees`"
     )
+
+
+def test_insert():
+    table = MySQLTable("employees", "salary", "bonus")
+    query = table.insert(table.salary, table.bonus).values(100, 200).build()
+    assert query == "INSERT INTO `employees` (`salary`,`bonus`) VALUES (100,200)"

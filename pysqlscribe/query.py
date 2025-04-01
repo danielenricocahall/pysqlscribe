@@ -35,6 +35,9 @@ EXCEPT = "EXCEPT"
 EXCEPT_ALL = f"EXCEPT {ALL}"
 INTERSECT = "INTERSECT"
 INTERSECT_ALL = f"INTERSECT {ALL}"
+INSERT = "INSERT"
+INTO = "INTO"
+VALUES = "VALUES"
 
 
 class JoinType(str, Enum):
@@ -56,7 +59,7 @@ def reconcile_args_into_string(*args, escape_identifier: Callable[[str], str]) -
     identifiers = []
 
     for identifier in arg:
-        identifier = identifier.strip()
+        identifier = str(identifier).strip()
 
         if len(parts := ALIAS_SPLIT_REGEX.split(identifier, maxsplit=1)) == 2:
             base, alias = parts[0].strip(), parts[1].strip()
@@ -276,6 +279,24 @@ class IntersectNode(CombineNode):
         return INTERSECT if not self.all else INTERSECT_ALL
 
 
+class InsertNode(Node):
+    @property
+    def valid_next_nodes(self):
+        return (ValuesNode,)
+
+    def __str__(self):
+        return f"{INSERT} {INTO} {self.state['table']} ({self.state['columns']})"
+
+
+class ValuesNode(Node):
+    @property
+    def valid_next_nodes(self):
+        return ()
+
+    def __str__(self):
+        return f"VALUES ({self.state['values']})"
+
+
 class InvalidJoinException(Exception): ...
 
 
@@ -299,6 +320,31 @@ class Query(ABC):
             FromNode(
                 {
                     "tables": reconcile_args_into_string(
+                        args, escape_identifier=self.escape_identifier
+                    )
+                }
+            )
+        )
+        self.node = self.node.next_
+        return self
+
+    def insert(self, *args) -> Self:
+        *columns, table = args
+        columns = reconcile_args_into_string(
+            columns, escape_identifier=self.escape_identifier
+        )
+        table = reconcile_args_into_string(
+            table, escape_identifier=self.escape_identifier
+        )
+        if not self.node:
+            self.node = InsertNode({"columns": columns, "table": table})
+        return self
+
+    def values(self, *args) -> Self:
+        self.node.add(
+            ValuesNode(
+                {
+                    "values": reconcile_args_into_string(
                         args, escape_identifier=self.escape_identifier
                     )
                 }

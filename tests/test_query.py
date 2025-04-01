@@ -234,3 +234,20 @@ def test_combine_operations(all_, combine_operation):
         query.build()
         == f"SELECT `test_column` FROM `test_table` {merge_operation_str} SELECT `another_test_column` FROM `another_test_table`"
     )
+
+
+def test_insert_query():
+    query_builder = QueryRegistry.get_builder("mysql")
+    query = (
+        query_builder.insert(
+            "test_column",
+            "another_test_column",
+            "test_table",
+        )
+        .values(1, 2)
+        .build()
+    )
+    assert (
+        query
+        == "INSERT INTO `test_table` (`test_column`,`another_test_column`) VALUES (1,2)"
+    )
