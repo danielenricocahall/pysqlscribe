@@ -11,10 +11,15 @@ class InvalidPathException(Exception):
 
 
 def create_tables_from_parsed(
-    parsed: dict[str, list[str]], dialect: str
+    parsed: dict[str, dict[str, list[str] | str]], dialect: str
 ) -> dict[str, Table]:
     TableClass = Table.create(dialect)
-    return {name: TableClass(name, *cols) for name, cols in parsed.items()}
+    tables = {}
+    for table_name, table_metadata in parsed.items():
+        tables[table_name] = TableClass(
+            table_name, *table_metadata["columns"], schema=table_metadata.get("schema")
+        )
+    return tables
 
 
 def load_tables_from_ddls(

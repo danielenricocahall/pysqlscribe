@@ -46,6 +46,15 @@ CREATE TABLE memberships (
 """
 
 
+SQL_WITH_SCHEMA = """
+CREATE TABLE cool_company.employees (
+    employee_id INT,
+    salary INT,
+    role VARCHAR(50),
+);
+"""
+
+
 @pytest.fixture
 def temp_sql_file():
     with tempfile.NamedTemporaryFile("w+", suffix=".sql", delete=False) as f:
@@ -82,6 +91,15 @@ def temp_sql_with_constraints():
 def temp_sql_with_composite_key():
     with tempfile.NamedTemporaryFile("w+", suffix=".sql", delete=False) as f:
         f.write(SQL_MIXED_INLINE_AND_BLOCK_CONSTRAINTS)
+        f.flush()
+        yield f.name
+    os.remove(f.name)
+
+
+@pytest.fixture
+def temp_sql_with_schema():
+    with tempfile.NamedTemporaryFile("w+", suffix=".sql", delete=False) as f:
+        f.write(SQL_WITH_SCHEMA)
         f.flush()
         yield f.name
     os.remove(f.name)
@@ -144,3 +162,20 @@ def test_composite_primary_key_skipped_correctly(temp_sql_with_composite_key):
     memberships = tables["memberships"]
 
     assert set(memberships.columns) == {"member_id", "group_id", "role"}
+
+
+def test_load_with_schema(temp_sql_with_schema):
+    """
+    Test loading a table with a schema in the name.
+    """
+    tables = load_tables_from_ddls(temp_sql_with_schema, dialect="sqlite")
+
+    assert "employees" in tables
+    employees = tables["employees"]
+
+    # Ensure the table name respects the schema
+    assert employees.table_name == "cool_company.employees"
+    assert employees.schema == "cool_company"
+    assert hasattr(employees, "employee_id")
+    assert hasattr(employees, "salary")
+    assert hasattr(employees, "role")
