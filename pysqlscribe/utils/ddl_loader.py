@@ -1,0 +1,41 @@
+import os
+from typing import Union
+from pysqlscribe.table import Table
+from pysqlscribe.utils.ddl_parser import (
+    parse_create_tables,
+)  # assumes you moved the parser to ddl_loader.py
+
+
+def create_tables_from_parsed(
+    parsed: dict[str, list[str]], dialect: str
+) -> dict[str, Table]:
+    TableClass = Table.create(dialect)
+    return {name: TableClass(name, *cols) for name, cols in parsed.items()}
+
+
+def load_tables_from_ddls(
+    path: Union[str, os.PathLike], dialect: str
+) -> dict[str, Table]:
+    all_tables = {}
+
+    if os.path.isdir(path):
+        sql_files = [
+            os.path.join(path, f)
+            for f in os.listdir(path)
+            if f.lower().endswith(".sql")
+        ]
+    elif os.path.isfile(path) and path.lower().endswith(".sql"):
+        sql_files = [path]
+    else:
+        raise ValueError(
+            f"Invalid path: {path}. Must be a .sql file or directory containing .sql files."
+        )
+
+    for sql_file in sql_files:
+        with open(sql_file, "r") as f:
+            sql_text = f.read()
+        parsed = parse_create_tables(sql_text)
+        table_objs = create_tables_from_parsed(parsed, dialect)
+        all_tables.update(table_objs)
+
+    return all_tables
