@@ -1,3 +1,4 @@
+from pysqlscribe.regex_patterns import CONSTRAINT_PREFIX_REGEX, CREATE_TABLE_REGEX
 from pysqlscribe.table import Table
 import re
 
@@ -6,7 +7,7 @@ def parse_create_tables(sql_text: str) -> dict[str, dict[str, list[str] | str]]:
     tables = {}
 
     table_regex = re.compile(
-        r"CREATE\s+TABLE\s+((\w+)\.)?(\w+)\s*\((.*?)\);",
+        CREATE_TABLE_REGEX,
         re.IGNORECASE | re.DOTALL,
     )
 
@@ -16,13 +17,11 @@ def parse_create_tables(sql_text: str) -> dict[str, dict[str, list[str] | str]]:
         columns_section = match.group(4)
         columns = []
 
-        col_defs = re.split(r",(?![^\(]*\))", columns_section)
+        col_defs = re.split(r",(?![^(]*\))", columns_section)
 
         for col_def in col_defs:
             col_def = col_def.strip()
-            if re.match(
-                r"^(PRIMARY|FOREIGN|CONSTRAINT|UNIQUE|INDEX)", col_def, re.IGNORECASE
-            ):
+            if re.match(CONSTRAINT_PREFIX_REGEX, col_def, re.IGNORECASE):
                 continue
 
             parts = col_def.split()
