@@ -1,7 +1,7 @@
 import os
 import tempfile
 import pytest
-from pysqlscribe.utils.ddl_loader import load_tables_from_ddls
+from pysqlscribe.utils.ddl_loader import load_tables_from_ddls, InvalidPathException
 
 SIMPLE_SQL = """
 CREATE TABLE users (
@@ -109,7 +109,7 @@ def test_load_from_directory(temp_sql_dir):
 
 
 def test_invalid_path_raises():
-    with pytest.raises(ValueError, match="Invalid path:"):
+    with pytest.raises(InvalidPathException, match="Invalid path:"):
         load_tables_from_ddls("nope/not/real.sql", dialect="mysql")
 
 
@@ -120,7 +120,7 @@ def test_unsupported_file_extension_raises():
         path = f.name
 
     try:
-        with pytest.raises(ValueError, match="Invalid path:"):
+        with pytest.raises(InvalidPathException):
             load_tables_from_ddls(path, dialect="sqlite")
     finally:
         os.remove(path)

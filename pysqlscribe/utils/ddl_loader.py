@@ -6,6 +6,10 @@ from pysqlscribe.utils.ddl_parser import (
 )
 
 
+class InvalidPathException(Exception):
+    """Custom exception for cases where a path not containing '.sql' files is provided"""
+
+
 def create_tables_from_parsed(
     parsed: dict[str, list[str]], dialect: str
 ) -> dict[str, Table]:
@@ -27,7 +31,7 @@ def load_tables_from_ddls(
     elif os.path.isfile(path) and path.lower().endswith(".sql"):
         sql_files = [path]
     else:
-        raise ValueError(
+        raise InvalidPathException(
             f"Invalid path: {path}. Must be a .sql file or directory containing .sql files."
         )
 
