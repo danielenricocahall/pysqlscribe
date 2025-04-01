@@ -14,12 +14,10 @@ def parse_create_tables(sql_text: str) -> dict[str, list[str]]:
         columns_section = match.group(2)
         columns = []
 
-        # This regex splits on commas not inside parentheses
         col_defs = re.split(r",(?![^\(]*\))", columns_section)
 
         for col_def in col_defs:
             col_def = col_def.strip()
-            # Skip constraints or indexes
             if re.match(
                 r"^(PRIMARY|FOREIGN|CONSTRAINT|UNIQUE|INDEX)", col_def, re.IGNORECASE
             ):

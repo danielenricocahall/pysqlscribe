@@ -3,7 +3,7 @@ from typing import Union
 from pysqlscribe.table import Table
 from pysqlscribe.utils.ddl_parser import (
     parse_create_tables,
-)  # assumes you moved the parser to ddl_loader.py
+)
 
 
 def create_tables_from_parsed(
