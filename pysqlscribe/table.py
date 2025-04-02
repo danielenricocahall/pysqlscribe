@@ -74,6 +74,9 @@ class Table(ABC, AliasMixin):
                     table = f"{table.table_name}{table.alias}"
                 return super().join(table, join_type, condition)
 
+            def __repr__(self):
+                return f"{self.__class__.__name__}(name={self.table_name}, columns={self.columns})"
+
         # Set a meaningful class name
         DynamicTable.__name__ = class_name
         cls.__cache[class_name] = DynamicTable

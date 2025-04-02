@@ -388,11 +388,12 @@ CREATE TABLE cool_company.employees (
 );
 """
 parsed = parse_create_tables(sql) # will be a dictionary of table name to table metadata e.g; columns, schema
+parsed # {'employees': {'columns': ['employee_id', 'salary', 'role'], 'schema': 'cool_company'}}
 tables = create_tables_from_parsed(
     parsed, 
     dialect="mysql"
-)
-
+) # dictionary of table name to `Table` object
+tables # {'employees': MysqlTable(name=cool_company.employees, columns=('employee_id', 'salary', 'role'))}
 ```
 # Supported Dialects
 This is anticipated to grow, also there are certainly operations that are missing within dialects.
