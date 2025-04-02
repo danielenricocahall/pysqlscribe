@@ -83,6 +83,9 @@ class Table(ABC, AliasMixin):
                     for column in columns
                 ]
                 return super().insert(*columns, self.table_name)
+             
+            def __repr__(self):
+                return f"{self.__class__.__name__}(name={self.table_name}, columns={self.columns})"
 
         # Set a meaningful class name
         DynamicTable.__name__ = class_name
