@@ -359,6 +359,42 @@ SELECT test_column,another_test_column FROM `test_table` WHERE test_column = 1 A
 
 Alternatively, if you don't want to change existing code or you have several `Query` or `Table` objects you want to apply this setting to (and don't plan on swapping settings), you can set the environment variable `PYSQLSCRIBE_ESCAPE_IDENTIFIERS` to `"False"` or `"0"`.
 
+# DDL Parser/Loader
+`pysqlscribe` also has a simple DDL parser which can load/create `Table` objecs from a DDL file (or directory containing DDL files):
+
+```python
+
+from pysqlscribe.utils.ddl_loader import load_tables_from_ddls
+
+tables = load_tables_from_ddls(
+    "path/to/ddl_file.sql",  # can be a file or directory
+    dialect="mysql"  # specify the dialect of the DDL
+)
+
+```
+
+Alternatively, if you have a string containing the DDL, you can use:
+
+```python
+from pysqlscribe.utils.ddl_parser import parse_create_tables
+from pysqlscribe.utils.ddl_loader import create_tables_from_parsed
+
+
+sql = """
+CREATE TABLE cool_company.employees (
+    employee_id INT,
+    salary INT,
+    role VARCHAR(50),
+);
+"""
+parsed = parse_create_tables(sql) # will be a dictionary of table name to table metadata e.g; columns, schema
+parsed # {'employees': {'columns': ['employee_id', 'salary', 'role'], 'schema': 'cool_company'}}
+tables = create_tables_from_parsed(
+    parsed, 
+    dialect="mysql"
+) # dictionary of table name to `Table` object
+tables # {'employees': MysqlTable(name=cool_company.employees, columns=('employee_id', 'salary', 'role'))}
+```
 # Supported Dialects
 This is anticipated to grow, also there are certainly operations that are missing within dialects.
 - [X] `MySQL`
