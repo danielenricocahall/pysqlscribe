@@ -294,7 +294,17 @@ class ValuesNode(Node):
         return ()
 
     def __str__(self):
-        return f"VALUES ({self.state['values']})"
+        if isinstance(self.state["values"], str):
+            values = f"({self.state['values']})"
+        elif isinstance(self.state["values"], list):
+            values = ",".join([f"({v})" for v in self.state["values"]])
+        else:
+            raise ValueError(f"Invalid values: {self.state['values']}")
+        return f"{VALUES} {values}"
+
+    def __add__(self, other):
+        if isinstance(other, ValuesNode):
+            return ValuesNode({"values": [self.state["values"], other.state["values"]]})
 
 
 class InvalidJoinException(Exception): ...
@@ -341,15 +351,29 @@ class Query(ABC):
         return self
 
     def values(self, *args) -> Self:
-        self.node.add(
-            ValuesNode(
+        if all(isinstance(arg, tuple) for arg in args):
+            values = reduce(
+                operator.add,
+                [
+                    ValuesNode(
+                        {
+                            "values": reconcile_args_into_string(
+                                arg, escape_identifier=self.escape_identifier
+                            )
+                        }
+                    )
+                    for arg in args
+                ],
+            )
+        else:
+            values = ValuesNode(
                 {
                     "values": reconcile_args_into_string(
                         args, escape_identifier=self.escape_identifier
                     )
                 }
             )
-        )
+        self.node.add(values)
         self.node = self.node.next_
         return self
 
