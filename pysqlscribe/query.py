@@ -282,7 +282,7 @@ class IntersectNode(CombineNode):
 class InsertNode(Node):
     @property
     def valid_next_nodes(self):
-        return ()
+        return (ReturningNode,)
 
     def __str__(self):
         if isinstance(self.state["values"], str):
@@ -293,6 +293,15 @@ class InsertNode(Node):
             raise ValueError(f"Invalid values: {self.state['values']}")
         columns = f" ({self.state['columns']})" if self.state["columns"] else ""
         return f"{INSERT} {INTO} {self.state['table']}{columns} {VALUES} {values}"
+
+
+class ReturningNode(Node):
+    @property
+    def valid_next_nodes(self):
+        return ()
+
+    def __str__(self):
+        return f"RETURNING {self.state['columns']}"
 
 
 class InvalidJoinException(Exception): ...
@@ -344,16 +353,27 @@ class Query(ABC):
             )
         return self
 
-    def _resolve_insert_values(self, columns, values):
+    def returning(self, *args) -> Self:
+        self.node.add(
+            ReturningNode(
+                {
+                    "columns": reconcile_args_into_string(
+                        args, escape_identifier=self.escape_identifier
+                    )
+                }
+            )
+        )
+        self.node = self.node.next_
+        return self
+
+    @staticmethod
+    def _resolve_insert_values(columns, values):
         if isinstance(values, tuple):
             values = [values]
         assert all(
             (len(columns) == 0 or len(columns) == len(value) for value in values)
         ), "Number of columns and values must match"
-        values = [
-            reconcile_args_into_string(value, escape_identifier=self.escape_identifier)
-            for value in values
-        ]
+        values = [f"{','.join(map(str, value))}" for value in values]
         return values
 
     def join(

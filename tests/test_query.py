@@ -282,3 +282,18 @@ def test_insert_no_table_provided():
     query_builder = QueryRegistry.get_builder("mysql")
     with pytest.raises(ValueError):
         query_builder.insert("test_column", "another_test_column", values=(1, 2))
+
+
+def test_insert_with_returning():
+    query_builder = QueryRegistry.get_builder("postgres")
+    query = (
+        query_builder.insert(
+            "id", "employee_name", into="employees", values=(1, "'john doe'")
+        )
+        .returning("id")
+        .build()
+    )
+    assert (
+        query
+        == 'INSERT INTO "employees" ("id","employee_name") VALUES (1,\'john doe\') RETURNING "id"'
+    )
