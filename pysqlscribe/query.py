@@ -291,7 +291,8 @@ class InsertNode(Node):
             values = ",".join([f"({v})" for v in self.state["values"]])
         else:
             raise ValueError(f"Invalid values: {self.state['values']}")
-        return f"{INSERT} {INTO} {self.state['table']} ({self.state['columns']}) {VALUES} {values}"
+        columns = f" ({self.state['columns']})" if self.state["columns"] else ""
+        return f"{INSERT} {INTO} {self.state['table']}{columns} {VALUES} {values}"
 
 
 class InvalidJoinException(Exception): ...
@@ -347,9 +348,9 @@ class Query(ABC):
     def _resolve_insert_values(self, columns, values):
         if isinstance(values, tuple):
             values = [values]
-        assert all((len(columns) == len(value) for value in values)), (
-            "Number of columns and values must match"
-        )
+        assert all(
+            (len(columns) == 0 or len(columns) == len(value) for value in values)
+        ), "Number of columns and values must match"
         values = [
             reconcile_args_into_string(value, escape_identifier=self.escape_identifier)
             for value in values
