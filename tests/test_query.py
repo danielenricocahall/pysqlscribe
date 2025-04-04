@@ -280,5 +280,5 @@ def test_insert_column_and_values_mismatch():
 
 def test_insert_no_table_provided():
     query_builder = QueryRegistry.get_builder("mysql")
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         query_builder.insert("test_column", "another_test_column", values=(1, 2))

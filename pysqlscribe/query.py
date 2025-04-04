@@ -329,9 +329,8 @@ class Query(ABC):
     def insert(self, *columns, **kwargs) -> Self:
         table = kwargs.get("into")
         values = kwargs.get("values")
-        assert table is not None and values is not None, (
-            "For an `insert` query, please provide a table through `into` keyword and values through the `values` keyword"
-        )
+        if table is None or values is None:
+            raise ValueError("Insert queries require `into` and `values` keywords.")
         values = self._resolve_insert_values(columns, values)
         columns = reconcile_args_into_string(
             columns, escape_identifier=self.escape_identifier
