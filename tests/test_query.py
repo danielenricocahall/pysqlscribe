@@ -23,6 +23,12 @@ def test_select_query(fields):
     assert query == f"SELECT {','.join(fields)} FROM `test_table`"
 
 
+def test_select_query_no_columns():
+    query_builder = QueryRegistry.get_builder("mysql")
+    query = query_builder.select().from_("test_table").build()
+    assert query == "SELECT * FROM `test_table`"
+
+
 @pytest.mark.parametrize(
     "dialect,syntax",
     [("mysql", "LIMIT {limit}"), ("oracle", "FETCH NEXT {limit} ROWS ONLY")],
@@ -314,4 +320,19 @@ def test_insert_with_returning_multiple_values():
     assert (
         query
         == 'INSERT INTO "employees" ("id","employee_name") VALUES (1,\'john doe\') RETURNING "id","employee_name"'
+    )
+
+
+def test_insert_returning_empty():
+    query_builder = QueryRegistry.get_builder("postgres")
+    query = (
+        query_builder.insert(
+            "id", "employee_name", into="employees", values=(1, "'john doe'")
+        )
+        .returning()
+        .build()
+    )
+    assert (
+        query
+        == 'INSERT INTO "employees" ("id","employee_name") VALUES (1,\'john doe\') RETURNING *'
     )

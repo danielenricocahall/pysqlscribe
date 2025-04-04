@@ -312,12 +312,7 @@ class Query(ABC):
     __escape_identifiers_enabled: bool = True
 
     def select(self, *args) -> Self:
-        if WILDCARD_REGEX.match(args[0]):
-            columns = args[0]
-        else:
-            columns = reconcile_args_into_string(
-                args, escape_identifier=self.escape_identifier
-            )
+        columns = self._resolve_columns(*args)
         if not self.node:
             self.node = SelectNode({"columns": columns})
         return self
@@ -354,18 +349,13 @@ class Query(ABC):
         return self
 
     def returning(self, *args) -> Self:
-        if WILDCARD_REGEX.match(args[0]):
-            columns = args[0]
-        else:
-            columns = reconcile_args_into_string(
-                args, escape_identifier=self.escape_identifier
-            )
+        columns = self._resolve_columns(*args)
         self.node.add(ReturningNode({"columns": columns}))
         self.node = self.node.next_
         return self
 
     @staticmethod
-    def _resolve_insert_values(columns, values):
+    def _resolve_insert_values(columns, values) -> list[str]:
         if isinstance(values, tuple):
             values = [values]
         assert all(
@@ -373,6 +363,17 @@ class Query(ABC):
         ), "Number of columns and values must match"
         values = [f"{','.join(map(str, value))}" for value in values]
         return values
+
+    def _resolve_columns(self, *args) -> str:
+        if not args:
+            columns = "*"
+        elif WILDCARD_REGEX.match(args[0]):
+            columns = args[0]
+        else:
+            columns = reconcile_args_into_string(
+                args, escape_identifier=self.escape_identifier
+            )
+        return columns
 
     def join(
         self, table: str, join_type: str = JoinType.INNER, condition: str | None = None
