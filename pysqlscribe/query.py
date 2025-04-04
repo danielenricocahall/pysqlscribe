@@ -282,15 +282,6 @@ class IntersectNode(CombineNode):
 class InsertNode(Node):
     @property
     def valid_next_nodes(self):
-        return (ValuesNode,)
-
-    def __str__(self):
-        return f"{INSERT} {INTO} {self.state['table']} ({self.state['columns']}) {self.state['values']}"
-
-
-class ValuesNode(Node):
-    @property
-    def valid_next_nodes(self):
         return ()
 
     def __str__(self):
@@ -300,11 +291,7 @@ class ValuesNode(Node):
             values = ",".join([f"({v})" for v in self.state["values"]])
         else:
             raise ValueError(f"Invalid values: {self.state['values']}")
-        return f"{VALUES} {values}"
-
-    def __add__(self, other):
-        if isinstance(other, ValuesNode):
-            return ValuesNode({"values": [self.state["values"], other.state["values"]]})
+        return f"{INSERT} {INTO} {self.state['table']} ({self.state['columns']}) {VALUES} {values}"
 
 
 class InvalidJoinException(Exception): ...
@@ -352,26 +339,15 @@ class Query(ABC):
             table, escape_identifier=self.escape_identifier
         )
         if all(isinstance(value, tuple) for value in values):
-            values = reduce(
-                operator.add,
-                [
-                    ValuesNode(
-                        {
-                            "values": reconcile_args_into_string(
-                                value, escape_identifier=self.escape_identifier
-                            )
-                        }
-                    )
-                    for value in values
-                ],
-            )
+            values = [
+                reconcile_args_into_string(
+                    value, escape_identifier=self.escape_identifier
+                )
+                for value in values
+            ]
         else:
-            values = ValuesNode(
-                {
-                    "values": reconcile_args_into_string(
-                        values, escape_identifier=self.escape_identifier
-                    )
-                }
+            values = reconcile_args_into_string(
+                values, escape_identifier=self.escape_identifier
             )
         if not self.node:
             self.node = InsertNode(
