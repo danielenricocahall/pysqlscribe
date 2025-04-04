@@ -328,32 +328,33 @@ class Query(ABC):
     def insert(self, *columns, **kwargs) -> Self:
         table = kwargs.get("into")
         values = kwargs.get("values")
-        if not table or not values:
-            raise ValueError(
-                "For an `insert` query, please provide a table through `into` keyword and values through the `values` keyword"
-            )
+        assert table is not None and values is not None, (
+            "For an `insert` query, please provide a table through `into` keyword and values through the `values` keyword"
+        )
+        values = self._resolve_insert_values(columns, values)
         columns = reconcile_args_into_string(
             columns, escape_identifier=self.escape_identifier
         )
         table = reconcile_args_into_string(
             table, escape_identifier=self.escape_identifier
         )
-        if all(isinstance(value, tuple) for value in values):
-            values = [
-                reconcile_args_into_string(
-                    value, escape_identifier=self.escape_identifier
-                )
-                for value in values
-            ]
-        else:
-            values = reconcile_args_into_string(
-                values, escape_identifier=self.escape_identifier
-            )
         if not self.node:
             self.node = InsertNode(
                 {"columns": columns, "table": table, "values": values}
             )
         return self
+
+    def _resolve_insert_values(self, columns, values):
+        if isinstance(values, tuple):
+            values = [values]
+        assert all((len(columns) == len(value) for value in values)), (
+            "Number of columns and values must match"
+        )
+        values = [
+            reconcile_args_into_string(value, escape_identifier=self.escape_identifier)
+            for value in values
+        ]
+        return values
 
     def join(
         self, table: str, join_type: str = JoinType.INNER, condition: str | None = None

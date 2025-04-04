@@ -259,3 +259,17 @@ def test_insert_multiple_values():
         query
         == "INSERT INTO `test_table` (`test_column`,`another_test_column`) VALUES (1,2),(3,4)"
     )
+
+
+def test_insert_column_and_values_mismatch():
+    query_builder = QueryRegistry.get_builder("mysql")
+    with pytest.raises(AssertionError):
+        query_builder.insert(
+            "test_column", "another_test_column", into="test_table", values=(1,)
+        )
+
+
+def test_insert_no_table_provided():
+    query_builder = QueryRegistry.get_builder("mysql")
+    with pytest.raises(AssertionError):
+        query_builder.insert("test_column", "another_test_column", values=(1, 2))
