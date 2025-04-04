@@ -238,15 +238,12 @@ def test_combine_operations(all_, combine_operation):
 
 def test_insert_query():
     query_builder = QueryRegistry.get_builder("mysql")
-    query = (
-        query_builder.insert(
-            "test_column",
-            "another_test_column",
-            "test_table",
-        )
-        .values(1, 2)
-        .build()
-    )
+    query = query_builder.insert(
+        "test_column",
+        "another_test_column",
+        into="test_table",
+        values=(1, 2),
+    ).build()
     assert (
         query
         == "INSERT INTO `test_table` (`test_column`,`another_test_column`) VALUES (1,2)"
@@ -255,15 +252,9 @@ def test_insert_query():
 
 def test_insert_multiple_values():
     query_builder = QueryRegistry.get_builder("mysql")
-    query = (
-        query_builder.insert(
-            "test_column",
-            "another_test_column",
-            "test_table",
-        )
-        .values((1, 2), (3, 4))
-        .build()
-    )
+    query = query_builder.insert(
+        "test_column", "another_test_column", into="test_table", values=[(1, 2), (3, 4)]
+    ).build()
     assert (
         query
         == "INSERT INTO `test_table` (`test_column`,`another_test_column`) VALUES (1,2),(3,4)"

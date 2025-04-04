@@ -285,7 +285,7 @@ class InsertNode(Node):
         return (ValuesNode,)
 
     def __str__(self):
-        return f"{INSERT} {INTO} {self.state['table']} ({self.state['columns']})"
+        return f"{INSERT} {INTO} {self.state['table']} ({self.state['columns']}) {self.state['values']}"
 
 
 class ValuesNode(Node):
@@ -338,43 +338,45 @@ class Query(ABC):
         self.node = self.node.next_
         return self
 
-    def insert(self, *args) -> Self:
-        *columns, table = args
+    def insert(self, *columns, **kwargs) -> Self:
+        table = kwargs.get("into")
+        values = kwargs.get("values")
+        if not table or not values:
+            raise ValueError(
+                "For an `insert` query, please provide a table through `into` keyword and values through the `values` keyword"
+            )
         columns = reconcile_args_into_string(
             columns, escape_identifier=self.escape_identifier
         )
         table = reconcile_args_into_string(
             table, escape_identifier=self.escape_identifier
         )
-        if not self.node:
-            self.node = InsertNode({"columns": columns, "table": table})
-        return self
-
-    def values(self, *args) -> Self:
-        if all(isinstance(arg, tuple) for arg in args):
+        if all(isinstance(value, tuple) for value in values):
             values = reduce(
                 operator.add,
                 [
                     ValuesNode(
                         {
                             "values": reconcile_args_into_string(
-                                arg, escape_identifier=self.escape_identifier
+                                value, escape_identifier=self.escape_identifier
                             )
                         }
                     )
-                    for arg in args
+                    for value in values
                 ],
             )
         else:
             values = ValuesNode(
                 {
                     "values": reconcile_args_into_string(
-                        args, escape_identifier=self.escape_identifier
+                        values, escape_identifier=self.escape_identifier
                     )
                 }
             )
-        self.node.add(values)
-        self.node = self.node.next_
+        if not self.node:
+            self.node = InsertNode(
+                {"columns": columns, "table": table, "values": values}
+            )
         return self
 
     def join(
