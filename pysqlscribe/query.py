@@ -354,15 +354,13 @@ class Query(ABC):
         return self
 
     def returning(self, *args) -> Self:
-        self.node.add(
-            ReturningNode(
-                {
-                    "columns": reconcile_args_into_string(
-                        args, escape_identifier=self.escape_identifier
-                    )
-                }
+        if WILDCARD_REGEX.match(args[0]):
+            columns = args[0]
+        else:
+            columns = reconcile_args_into_string(
+                args, escape_identifier=self.escape_identifier
             )
-        )
+        self.node.add(ReturningNode({"columns": columns}))
         self.node = self.node.next_
         return self
 

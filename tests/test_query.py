@@ -284,16 +284,34 @@ def test_insert_no_table_provided():
         query_builder.insert("test_column", "another_test_column", values=(1, 2))
 
 
-def test_insert_with_returning():
+@pytest.mark.parametrize("return_value", ["id", "*"])
+def test_insert_with_returning(return_value):
     query_builder = QueryRegistry.get_builder("postgres")
     query = (
         query_builder.insert(
             "id", "employee_name", into="employees", values=(1, "'john doe'")
         )
-        .returning("id")
+        .returning(return_value)
+        .build()
+    )
+    if return_value != "*":
+        return_value = query_builder.escape_identifier(return_value)
+    assert (
+        query
+        == f'INSERT INTO "employees" ("id","employee_name") VALUES (1,\'john doe\') RETURNING {return_value}'
+    )
+
+
+def test_insert_with_returning_multiple_values():
+    query_builder = QueryRegistry.get_builder("postgres")
+    query = (
+        query_builder.insert(
+            "id", "employee_name", into="employees", values=(1, "'john doe'")
+        )
+        .returning("id", "employee_name")
         .build()
     )
     assert (
         query
-        == 'INSERT INTO "employees" ("id","employee_name") VALUES (1,\'john doe\') RETURNING "id"'
+        == 'INSERT INTO "employees" ("id","employee_name") VALUES (1,\'john doe\') RETURNING "id","employee_name"'
     )
