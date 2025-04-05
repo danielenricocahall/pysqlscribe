@@ -366,8 +366,8 @@ class Query(ABC):
 
     def _resolve_columns(self, *args) -> str:
         if not args:
-            columns = "*"
-        elif WILDCARD_REGEX.match(args[0]):
+            args = ["*"]
+        if WILDCARD_REGEX.match(args[0]):
             columns = args[0]
         else:
             columns = reconcile_args_into_string(
