@@ -372,7 +372,27 @@ Output:
 INSERT INTO `test_table` (`test_column`,`another_test_column`) VALUES (1,2),(3,4)
 ```
 
-Similarly, the `Table` API offers the `insert` capability, although the `into` argument is inferred from the table name:
+`RETURNING` is also supported:
+
+```python
+from pysqlscribe.query import QueryRegistry
+query_builder = QueryRegistry.get_builder("postgres")
+query = (
+    query_builder.insert(
+        "id", "employee_name", into="employees", values=(1, "'john doe'")
+    )
+    .returning("id", "employee_name")
+    .build()
+)
+```
+
+Output:
+
+```postgresql   
+INSERT INTO "employees" ("id","employee_name") VALUES (1,'john doe') RETURNING "id","employee_name"
+```
+
+The `Table` API offers the `insert` capability, although the `into` argument is inferred from the table name:
 
 ```python
 from pysqlscribe.table import MySQLTable
