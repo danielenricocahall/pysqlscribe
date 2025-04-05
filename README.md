@@ -392,7 +392,7 @@ Output:
 INSERT INTO "employees" ("id","employee_name") VALUES (1,'john doe') RETURNING "id","employee_name"
 ```
 
-The `Table` API offers the `insert` capability, although the `into` argument is inferred from the table name:
+The `Table` API offers the `insert` capability. Similar to `select`, the `into` argument is inferred from the table name:
 
 ```python
 from pysqlscribe.table import MySQLTable
