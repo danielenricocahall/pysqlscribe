@@ -74,6 +74,18 @@ class Table(ABC, AliasMixin):
                     table = f"{table.table_name}{table.alias}"
                 return super().join(table, join_type, condition)
 
+            def insert(self, *columns, **kwargs) -> Self:
+                """
+                Override the insert method to ensure it uses the correct table name.
+                """
+                columns = [
+                    column.name if isinstance(column, Column) else column
+                    for column in columns
+                ]
+                return super().insert(
+                    *columns, into=self.table_name, values=kwargs.get("values")
+                )
+
             def __repr__(self):
                 return f"{self.__class__.__name__}(name={self.table_name}, columns={self.columns})"
 

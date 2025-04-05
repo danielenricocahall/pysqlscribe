@@ -316,6 +316,77 @@ Output:
 SELECT "first_name" AS name FROM "employee" AS e
 ```
 
+## Inserts
+While the primary focus of this library is on building retrieval (`"SELECT"`) queries, you can also build `INSERT` queries:
+
+```python
+from pysqlscribe.query import QueryRegistry
+
+query_builder = QueryRegistry.get_builder("mysql")
+query = query_builder.insert(
+    "test_column",
+    "another_test_column",
+    into="test_table",
+    values=(1, 2),
+).build()
+```
+
+Output:
+
+```mysql
+INSERT INTO `test_table` (`test_column`,`another_test_column`) VALUES (1,2)
+```
+
+While `into` and `values` are required keyword arguments, if no positional arguments (`args`) are supplied, it is omitted from the query:
+
+```python
+from pysqlscribe.query import QueryRegistry
+
+query_builder = QueryRegistry.get_builder("mysql")
+query = query_builder.insert(
+    into="test_table",
+    values=(1, 2),
+).build()
+```
+
+Output:
+
+```mysql
+
+INSERT INTO `test_table` VALUES (1,2)
+```
+
+Multiple values can also be supplied:
+
+```python
+from pysqlscribe.query import QueryRegistry
+
+query_builder = QueryRegistry.get_builder("mysql")
+query = query_builder.insert(
+    "test_column", "another_test_column", into="test_table", values=[(1, 2), (3, 4)]
+).build()
+```
+
+Output:
+```mysql
+INSERT INTO `test_table` (`test_column`,`another_test_column`) VALUES (1,2),(3,4)
+```
+
+Similarly, the `Table` API offers the `insert` capability, although the `into` argument is inferred from the table name:
+
+```python
+from pysqlscribe.table import MySQLTable
+
+table = MySQLTable("employees", "salary", "bonus")
+query = table.insert(table.salary, table.bonus, values=(100, 200)).build()
+```
+
+Output:
+
+```mysql
+INSERT INTO `employees` (`salary`,`bonus`) VALUES (100,200)
+```
+
 ## Escaping Identifiers
 By default, all identifiers are escaped using the corresponding dialect's escape character, as can be seen in various examples. This is done to prevent SQL injection attacks and to ensure we handle different column name variations (e.g; a column with a space in the name, a column name which coincides with a keyword). Admittedly, this also makes the queries less aesthetic. If you want to disable this behavior, you can use the `disable_escape_identifiers` method:
 

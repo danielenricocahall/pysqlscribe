@@ -35,6 +35,9 @@ EXCEPT = "EXCEPT"
 EXCEPT_ALL = f"EXCEPT {ALL}"
 INTERSECT = "INTERSECT"
 INTERSECT_ALL = f"INTERSECT {ALL}"
+INSERT = "INSERT"
+INTO = "INTO"
+VALUES = "VALUES"
 
 
 class JoinType(str, Enum):
@@ -56,7 +59,7 @@ def reconcile_args_into_string(*args, escape_identifier: Callable[[str], str]) -
     identifiers = []
 
     for identifier in arg:
-        identifier = identifier.strip()
+        identifier = str(identifier).strip()
 
         if len(parts := ALIAS_SPLIT_REGEX.split(identifier, maxsplit=1)) == 2:
             base, alias = parts[0].strip(), parts[1].strip()
@@ -276,6 +279,31 @@ class IntersectNode(CombineNode):
         return INTERSECT if not self.all else INTERSECT_ALL
 
 
+class InsertNode(Node):
+    @property
+    def valid_next_nodes(self):
+        return (ReturningNode,)
+
+    def __str__(self):
+        if isinstance(self.state["values"], str):
+            values = f"({self.state['values']})"
+        elif isinstance(self.state["values"], list):
+            values = ",".join([f"({v})" for v in self.state["values"]])
+        else:
+            raise ValueError(f"Invalid values: {self.state['values']}")
+        columns = f" ({self.state['columns']})" if self.state["columns"] else ""
+        return f"{INSERT} {INTO} {self.state['table']}{columns} {VALUES} {values}"
+
+
+class ReturningNode(Node):
+    @property
+    def valid_next_nodes(self):
+        return ()
+
+    def __str__(self):
+        return f"RETURNING {self.state['columns']}"
+
+
 class InvalidJoinException(Exception): ...
 
 
@@ -284,12 +312,7 @@ class Query(ABC):
     __escape_identifiers_enabled: bool = True
 
     def select(self, *args) -> Self:
-        if WILDCARD_REGEX.match(args[0]):
-            columns = args[0]
-        else:
-            columns = reconcile_args_into_string(
-                args, escape_identifier=self.escape_identifier
-            )
+        columns = self._resolve_columns(*args)
         if not self.node:
             self.node = SelectNode({"columns": columns})
         return self
@@ -306,6 +329,51 @@ class Query(ABC):
         )
         self.node = self.node.next_
         return self
+
+    def insert(self, *columns, **kwargs) -> Self:
+        table = kwargs.get("into")
+        values = kwargs.get("values")
+        if table is None or values is None:
+            raise ValueError("Insert queries require `into` and `values` keywords.")
+        values = self._resolve_insert_values(columns, values)
+        columns = reconcile_args_into_string(
+            columns, escape_identifier=self.escape_identifier
+        )
+        table = reconcile_args_into_string(
+            table, escape_identifier=self.escape_identifier
+        )
+        if not self.node:
+            self.node = InsertNode(
+                {"columns": columns, "table": table, "values": values}
+            )
+        return self
+
+    def returning(self, *args) -> Self:
+        columns = self._resolve_columns(*args)
+        self.node.add(ReturningNode({"columns": columns}))
+        self.node = self.node.next_
+        return self
+
+    @staticmethod
+    def _resolve_insert_values(columns, values) -> list[str]:
+        if isinstance(values, tuple):
+            values = [values]
+        assert all(
+            (len(columns) == 0 or len(columns) == len(value) for value in values)
+        ), "Number of columns and values must match"
+        values = [f"{','.join(map(str, value))}" for value in values]
+        return values
+
+    def _resolve_columns(self, *args) -> str:
+        if not args:
+            args = ["*"]
+        if WILDCARD_REGEX.match(args[0]):
+            columns = args[0]
+        else:
+            columns = reconcile_args_into_string(
+                args, escape_identifier=self.escape_identifier
+            )
+        return columns
 
     def join(
         self, table: str, join_type: str = JoinType.INNER, condition: str | None = None

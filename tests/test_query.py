@@ -23,6 +23,12 @@ def test_select_query(fields):
     assert query == f"SELECT {','.join(fields)} FROM `test_table`"
 
 
+def test_select_query_no_columns():
+    query_builder = QueryRegistry.get_builder("mysql")
+    query = query_builder.select().from_("test_table").build()
+    assert query == "SELECT * FROM `test_table`"
+
+
 @pytest.mark.parametrize(
     "dialect,syntax",
     [("mysql", "LIMIT {limit}"), ("oracle", "FETCH NEXT {limit} ROWS ONLY")],
@@ -233,4 +239,100 @@ def test_combine_operations(all_, combine_operation):
     assert (
         query.build()
         == f"SELECT `test_column` FROM `test_table` {merge_operation_str} SELECT `another_test_column` FROM `another_test_table`"
+    )
+
+
+def test_insert():
+    query_builder = QueryRegistry.get_builder("mysql")
+    query = query_builder.insert(
+        "test_column",
+        "another_test_column",
+        into="test_table",
+        values=(1, 2),
+    ).build()
+    assert (
+        query
+        == "INSERT INTO `test_table` (`test_column`,`another_test_column`) VALUES (1,2)"
+    )
+
+
+def test_insert_no_cols_query():
+    query_builder = QueryRegistry.get_builder("mysql")
+    query = query_builder.insert(
+        into="test_table",
+        values=(1, 2),
+    ).build()
+    assert query == "INSERT INTO `test_table` VALUES (1,2)"
+
+
+def test_insert_multiple_values():
+    query_builder = QueryRegistry.get_builder("mysql")
+    query = query_builder.insert(
+        "test_column", "another_test_column", into="test_table", values=[(1, 2), (3, 4)]
+    ).build()
+    assert (
+        query
+        == "INSERT INTO `test_table` (`test_column`,`another_test_column`) VALUES (1,2),(3,4)"
+    )
+
+
+def test_insert_column_and_values_mismatch():
+    query_builder = QueryRegistry.get_builder("mysql")
+    with pytest.raises(AssertionError):
+        query_builder.insert(
+            "test_column", "another_test_column", into="test_table", values=(1,)
+        )
+
+
+def test_insert_no_table_provided():
+    query_builder = QueryRegistry.get_builder("mysql")
+    with pytest.raises(ValueError):
+        query_builder.insert("test_column", "another_test_column", values=(1, 2))
+
+
+@pytest.mark.parametrize("return_value", ["id", "*"])
+def test_insert_with_returning(return_value):
+    query_builder = QueryRegistry.get_builder("postgres")
+    query = (
+        query_builder.insert(
+            "id", "employee_name", into="employees", values=(1, "'john doe'")
+        )
+        .returning(return_value)
+        .build()
+    )
+    if return_value != "*":
+        return_value = query_builder.escape_identifier(return_value)
+    assert (
+        query
+        == f'INSERT INTO "employees" ("id","employee_name") VALUES (1,\'john doe\') RETURNING {return_value}'
+    )
+
+
+def test_insert_with_returning_multiple_values():
+    query_builder = QueryRegistry.get_builder("postgres")
+    query = (
+        query_builder.insert(
+            "id", "employee_name", into="employees", values=(1, "'john doe'")
+        )
+        .returning("id", "employee_name")
+        .build()
+    )
+    assert (
+        query
+        == 'INSERT INTO "employees" ("id","employee_name") VALUES (1,\'john doe\') RETURNING "id","employee_name"'
+    )
+
+
+def test_insert_returning_empty():
+    query_builder = QueryRegistry.get_builder("postgres")
+    query = (
+        query_builder.insert(
+            "id", "employee_name", into="employees", values=(1, "'john doe'")
+        )
+        .returning()
+        .build()
+    )
+    assert (
+        query
+        == 'INSERT INTO "employees" ("id","employee_name") VALUES (1,\'john doe\') RETURNING *'
     )
