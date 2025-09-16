@@ -1,6 +1,6 @@
 import pytest
 
-from pysqlscribe.query import JoinType
+from pysqlscribe.query import JoinType, QueryRegistry
 
 from pysqlscribe.table import (
     MySQLTable,
@@ -160,3 +160,14 @@ def test_insert():
     table = MySQLTable("employees", "salary", "bonus")
     query = table.insert(table.salary, table.bonus, values=(100, 200)).build()
     assert query == "INSERT INTO `employees` (`salary`,`bonus`) VALUES (100,200)"
+
+
+def test_column_can_do_subquery():
+    subquery_builder = QueryRegistry.get_builder("mysql")
+    subquery = subquery_builder.select("id").from_("employees").where("salary > 10000")
+    employees = MySQLTable("employees", "salary", "bonus")
+    query = employees.select().where(employees.salary.in_(subquery)).build()
+    assert (
+        query
+        == "SELECT * FROM `employees` WHERE employees.salary IN (SELECT `id` FROM `employees` WHERE salary > 10000)"
+    )

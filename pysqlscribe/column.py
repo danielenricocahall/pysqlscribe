@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Self, Iterable, Protocol, runtime_checkable
 
 from pysqlscribe.alias import AliasMixin
 from pysqlscribe.regex_patterns import (
@@ -23,6 +23,13 @@ class Expression:
 
 
 class InvalidColumnNameException(Exception): ...
+
+
+@runtime_checkable
+class Subqueryish(Protocol):
+    @property
+    def select(self) -> Self:
+        return Self
 
 
 class Column(AliasMixin):
@@ -73,6 +80,22 @@ class Column(AliasMixin):
                 f"{self.fully_qualified_name} {operator} {other}", self.table_name
             )
 
+    def _membership_expression(
+        self, operator: str, other: Iterable[str | int | float] | Subqueryish
+    ):
+        if isinstance(other, Subqueryish):
+            return Expression(self.fully_qualified_name, operator, f"({other})")
+        if all(isinstance(item, str) for item in other):
+            right_side = ", ".join(f"'{item}'" for item in other)
+            return Expression(self.fully_qualified_name, operator, f"({right_side})")
+        elif all(isinstance(item, (int, float)) for item in other):
+            right_side = ", ".join(str(item) for item in other)
+            return Expression(self.fully_qualified_name, operator, f"({right_side})")
+        else:
+            raise NotImplementedError(
+                "membership expressions must be created with an iterable of columns or fixed values"
+            )
+
     def __str__(self):
         return self.name
 
@@ -105,6 +128,12 @@ class Column(AliasMixin):
 
     def __truediv__(self, other):
         return self._arithmetic_expression("/", other)
+
+    def in_(self, values: Iterable[str | int | float]) -> Expression:
+        return self._membership_expression("IN", values)
+
+    def not_in(self, values: Iterable[str | int | float]) -> Expression:
+        return self._membership_expression("NOT IN", values)
 
 
 class ExpressionColumn(Column):

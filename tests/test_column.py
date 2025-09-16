@@ -58,6 +58,13 @@ def test_column_arithmetic():
     assert str(result_div) == "table1.column1 / 2 * table2.column2"
 
 
+def test_column_membership():
+    col = Column("column1", "table1")
+    assert str(col.in_(["a", "b", "c"])) == "table1.column1 IN ('a', 'b', 'c')"
+    assert str(col.in_([1, 2, 3])) == "table1.column1 IN (1, 2, 3)"
+    assert str(col.not_in(["x", "y"])) == "table1.column1 NOT IN ('x', 'y')"
+
+
 def test_expression_str():
     expr = Expression("table1.column1", "=", "table2.column2")
     assert str(expr) == "table1.column1 = table2.column2"
