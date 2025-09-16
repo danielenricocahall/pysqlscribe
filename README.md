@@ -349,31 +349,7 @@ SELECT "first_name" AS name FROM "employee" AS e
 ```
 
 ## Subqueries
-Subqueries can be constructed by building a `Query` object and supplying it to another `Query` object:
-
-```python
-from pysqlscribe.query import QueryRegistry
-query_builder = QueryRegistry.get_builder("mysql")
-subquery = (
-    query_builder.select("test_column", "another_test_column")
-    .from_("test_table")
-    .where("test_column = 1")
-)
-query = (
-    query_builder.select("test_column")
-    .from_(subquery)
-    .where("another_test_column > 2")
-    .build()
-)
-```
-
-Output:
-
-```mysql
-SELECT `test_column` FROM (SELECT `test_column`,`another_test_column` FROM `test_table` WHERE test_column = 1) WHERE another_test_column > 2
-```
-
-Similarly, the `Column` objects from `Table`s can also be evaluated in subqueries:
+Subqueries can be used when evaluating `Column`s in the form of a membership:
 
 ```python
 from pysqlscribe.table import MySQLTable

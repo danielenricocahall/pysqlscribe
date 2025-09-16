@@ -54,16 +54,11 @@ class JoinType(str, Enum):
 
 def reconcile_args_into_string(*args, escape_identifier: Callable[[str], str]) -> str:
     arg = args[0]
-    if isinstance(arg, (str, Query)):
+    if isinstance(arg, str):
         arg = [arg]
     identifiers = []
 
     for identifier in arg:
-        if isinstance(identifier, Query):
-            # ensures we properly handle subqueries if you do a `SELECT ... FROM (SELECT ...)`
-            identifier = f"({identifier})"
-            identifiers.append(identifier)
-            continue
         identifier = str(identifier).strip()
 
         if len(parts := ALIAS_SPLIT_REGEX.split(identifier, maxsplit=1)) == 2:
@@ -261,6 +256,8 @@ class CombineNode(Node, ABC):
         return ()
 
     def __str__(self):
+        if isinstance(self.query, Query):
+            return f"{self.operation} {self.query.build(clear=False)}"
         return f"{self.operation} {self.query}"
 
 
@@ -379,10 +376,7 @@ class Query(ABC):
         return columns
 
     def join(
-        self,
-        table: str | Self,
-        join_type: str = JoinType.INNER,
-        condition: str | None = None,
+        self, table: str, join_type: str = JoinType.INNER, condition: str | None = None
     ) -> Self:
         self.node.add(
             JoinNode(
