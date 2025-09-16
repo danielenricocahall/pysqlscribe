@@ -4,12 +4,26 @@
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000)](https://github.com/danielenricocahall/pysqlscribe/blob/master/LICENSE)
 
 
-This is `pysqlscribe`, the Python library intended to make building SQL queries in your code a bit easier!
+At some point during a project, whether it be personal or professional, you have likely needed to use SQL to interact with a relational database in your application code. In the event they are tables your team owns, you may have used an object-relational mapper (ORM) - such as [SQLAlchemy](https://www.sqlalchemy.org/), [Django](https://docs.djangoproject.com/en/5.2/topics/db/queries/#), [Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy), or [Piccolo](https://github.com/piccolo-orm/piccolo). However, if the operations are primarily read-only (for example, reading and presenting information on tables which are externally updated by another process) integrating an ORM either isn’t feasible or would induce more extra complexity than it’s worth. In this case, options are fairly limited outside of writing raw SQL queries in code, which introduces a different type of complexity around sanitizing and validating inputs, ensuring proper syntax, and all the other stuff (likely) engineers don’t want to expend energy on.
 
 
-# Motivation
-Other query building libraries, such as [pypika](https://github.com/kayak/pypika) are fantastic but not actively maintained. Some ORM libraries such as [sqlalchemy](https://www.sqlalchemy.org/) offer similar (and awesome) capabilities using the core API, but if you're not already using the library in your application, it's a bit of a large dependency to introduce for the purposes of query building.
+While LLMs are fairly adept at building queries given the quantity of SQL on the internet, it still requires providing the table structure as context via DDL, verbal description, or an external tool that enables table metadata discovery. Additionally, when making updates, coding agents will need to ingest the strings and may make changes, potentially untested.
 
+This is `pysqlscribe`, a query building library which enables building SQL queries using objects. 
+
+# Highlights
+- **Dialect Support**: Currently supports `mysql`, `postgres`, and `oracle`. More dialects can be added by subclassing the `Query` class and registering it with the `QueryRegistry`.
+- Dependency Free: No external dependencies outside of the Python standard library.
+- **Multiple APIs**: Offers multiple APIs for building queries, including a `Query` class, a `Table` class, and a `Schema` class.
+- **DDL Parser/Loader**: Can parse DDL files to create `Table` objects, facilitating integration with existing database schema definitions.
+- **Safe by default**: All identifiers are escaped by default to prevent SQL injection attacks, with the option to disable this behavior if desired.
+
+# Installation
+To install, you can simply run:
+
+```bash
+pip install pysqlscribe
+```
 
 # API
 
