@@ -29,7 +29,7 @@ class InvalidColumnNameException(Exception): ...
 class Subqueryish(Protocol):
     @property
     def select(self) -> Self:
-        return Self
+        ...
 
 
 class Column(AliasMixin):
