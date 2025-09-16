@@ -60,6 +60,7 @@ def reconcile_args_into_string(*args, escape_identifier: Callable[[str], str]) -
 
     for identifier in arg:
         if isinstance(identifier, Query):
+            # ensures we properly handle subqueries if you do a `SELECT ... FROM (SELECT ...)`
             identifier = f"({identifier})"
             identifiers.append(identifier)
             continue
