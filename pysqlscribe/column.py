@@ -28,8 +28,7 @@ class InvalidColumnNameException(Exception): ...
 @runtime_checkable
 class Subqueryish(Protocol):
     @property
-    def select(self) -> Self:
-        ...
+    def select(self) -> Self: ...
 
 
 class Column(AliasMixin):
@@ -134,10 +133,10 @@ class Column(AliasMixin):
     def __truediv__(self, other):
         return self._arithmetic_expression("/", other)
 
-    def in_(self, values: Iterable[str | int | float]) -> Expression:
+    def in_(self, values: Iterable[str | int | float] | Subqueryish) -> Expression:
         return self._membership_expression("IN", values)
 
-    def not_in(self, values: Iterable[str | int | float]) -> Expression:
+    def not_in(self, values: Iterable[str | int | float] | Subqueryish) -> Expression:
         return self._membership_expression("NOT IN", values)
 
 
