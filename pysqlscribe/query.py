@@ -60,7 +60,7 @@ def reconcile_args_into_string(*args, escape_identifier: Callable[[str], str]) -
 
     for identifier in arg:
         if isinstance(identifier, Query):
-            identifier = f"({identifier.build(clear=False)})"
+            identifier = f"({identifier})"
             identifiers.append(identifier)
             continue
         identifier = str(identifier).strip()
@@ -260,8 +260,6 @@ class CombineNode(Node, ABC):
         return ()
 
     def __str__(self):
-        if isinstance(self.query, Query):
-            return f"{self.operation} {self.query.build(clear=False)}"
         return f"{self.operation} {self.query}"
 
 
