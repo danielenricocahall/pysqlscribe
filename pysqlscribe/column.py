@@ -98,7 +98,7 @@ class Column(AliasMixin):
             return Expression(self.fully_qualified_name, operator, f"({right_side})")
         else:
             raise NotImplementedError(
-                "membership expressions must be created with an iterable or a subquery"
+                "membership expressions must be created with an iterable containing items of the same type (all strings or all numbers); mixed types are not allowed"
             )
 
     def __str__(self):
