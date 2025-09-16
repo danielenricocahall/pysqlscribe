@@ -85,11 +85,16 @@ class Column(AliasMixin):
     ):
         if isinstance(other, Subqueryish):
             return Expression(self.fully_qualified_name, operator, f"({other})")
-        if all(isinstance(item, str) for item in other):
-            right_side = ", ".join(f"'{item}'" for item in other)
+        other_list = list(other)
+        if not other_list:
+            raise NotImplementedError(
+                "membership expressions must be created with a non-empty iterable or a subquery"
+            )
+        if all(isinstance(item, str) for item in other_list):
+            right_side = ", ".join(f"'{item}'" for item in other_list)
             return Expression(self.fully_qualified_name, operator, f"({right_side})")
-        elif all(isinstance(item, (int, float)) for item in other):
-            right_side = ", ".join(str(item) for item in other)
+        elif all(isinstance(item, (int, float)) for item in other_list):
+            right_side = ", ".join(str(item) for item in other_list)
             return Expression(self.fully_qualified_name, operator, f"({right_side})")
         else:
             raise NotImplementedError(
