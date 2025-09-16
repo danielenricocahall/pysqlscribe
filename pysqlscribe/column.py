@@ -103,6 +103,9 @@ class Column(AliasMixin):
     def __mul__(self, other):
         return self._arithmetic_expression("*", other)
 
+    def __truediv__(self, other):
+        return self._arithmetic_expression("/", other)
+
 
 class ExpressionColumn(Column):
     """Representation of a column that is the result of an arithmetic operation. Main benefit is to ensure the

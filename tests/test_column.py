@@ -53,6 +53,10 @@ def test_column_arithmetic():
     assert isinstance(result_mul, ExpressionColumn)
     assert str(result_mul) == "table1.column1 * table2.column2"
 
+    result_div = col1 / 2 * col2
+    assert isinstance(result_div, ExpressionColumn)
+    assert str(result_div) == "table1.column1 / 2 * table2.column2"
+
 
 def test_expression_str():
     expr = Expression("table1.column1", "=", "table2.column2")
