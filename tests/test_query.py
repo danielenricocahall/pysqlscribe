@@ -355,3 +355,25 @@ def test_where_clause_with_subquery():
         query
         == "SELECT `employee_name`,`salary` FROM `employees` WHERE id IN (SELECT `id` FROM `employees` WHERE salary > 10000) AND department = 'Engineering'"
     )
+
+
+def test_subquery():
+    from pysqlscribe.query import QueryRegistry
+
+    query_builder = QueryRegistry.get_builder("mysql")
+    another_query_builder = QueryRegistry.get_builder("mysql")
+    subquery = (
+        query_builder.select("test_column", "another_test_column")
+        .from_("test_table")
+        .where("test_column = 1")
+    )
+    query = (
+        another_query_builder.select("test_column")
+        .from_(subquery)
+        .where("another_test_column > 2")
+        .build()
+    )
+    assert (
+        query
+        == "SELECT `test_column` FROM (SELECT `test_column`,`another_test_column` FROM `test_table` WHERE test_column = 1) WHERE another_test_column > 2"
+    )

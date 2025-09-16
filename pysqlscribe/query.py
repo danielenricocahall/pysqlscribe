@@ -59,6 +59,10 @@ def reconcile_args_into_string(*args, escape_identifier: Callable[[str], str]) -
     identifiers = []
 
     for identifier in arg:
+        if isinstance(identifier, Query):
+            identifier = f"({identifier.build(clear=False)})"
+            identifiers.append(identifier)
+            continue
         identifier = str(identifier).strip()
 
         if len(parts := ALIAS_SPLIT_REGEX.split(identifier, maxsplit=1)) == 2:
