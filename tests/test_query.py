@@ -357,8 +357,7 @@ def test_where_clause_with_subquery():
     )
 
 
-def test_subquery():
-
+def test_subquery_select():
     query_builder = QueryRegistry.get_builder("mysql")
     another_query_builder = QueryRegistry.get_builder("mysql")
     subquery = (
@@ -375,4 +374,24 @@ def test_subquery():
     assert (
         query
         == "SELECT `test_column` FROM (SELECT `test_column`,`another_test_column` FROM `test_table` WHERE test_column = 1) WHERE another_test_column > 2"
+    )
+
+
+def test_subquery_in_join():
+    query_builder = QueryRegistry.get_builder("mysql")
+    another_query_builder = QueryRegistry.get_builder("mysql")
+    subquery = (
+        query_builder.select("id", "payroll_id")
+        .from_("employees")
+        .where("salary > 10000")
+    )
+    query = (
+        another_query_builder.select("employee_id", "store_location")
+        .from_("employees")
+        .join(subquery, JoinType.INNER, "employees.payroll_id = payroll.id")
+        .build()
+    )
+    assert (
+        query
+        == "SELECT `employee_id`,`store_location` FROM `employees` INNER JOIN (SELECT `id`,`payroll_id` FROM `employees` WHERE salary > 10000) ON employees.payroll_id = payroll.id"
     )

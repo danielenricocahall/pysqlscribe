@@ -54,7 +54,7 @@ class JoinType(str, Enum):
 
 def reconcile_args_into_string(*args, escape_identifier: Callable[[str], str]) -> str:
     arg = args[0]
-    if isinstance(arg, str):
+    if isinstance(arg, (str, Query)):
         arg = [arg]
     identifiers = []
 
@@ -379,7 +379,10 @@ class Query(ABC):
         return columns
 
     def join(
-        self, table: str, join_type: str = JoinType.INNER, condition: str | None = None
+        self,
+        table: str | Self,
+        join_type: str = JoinType.INNER,
+        condition: str | None = None,
     ) -> Self:
         self.node.add(
             JoinNode(
