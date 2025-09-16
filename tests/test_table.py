@@ -164,8 +164,8 @@ def test_insert():
 
 def test_subquery_columns():
     employees = MySQLTable("employees", "salary", "bonus", "department_id")
-    deparments = MySQLTable("departments", "id", "name", "manager_id")
-    subquery = deparments.select("id").where(deparments.name == "Engineering")
+    departments = MySQLTable("departments", "id", "name", "manager_id")
+    subquery = departments.select("id").where(departments.name == "Engineering")
     query = employees.select().where(employees.department_id.in_(subquery)).build()
     assert (
         query
