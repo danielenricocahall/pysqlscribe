@@ -65,6 +65,18 @@ def test_column_membership():
     assert str(col.not_in(["x", "y"])) == "table1.column1 NOT IN ('x', 'y')"
 
 
+def test_column_membership_failure_mixed_types():
+    col = Column("column1", "table1")
+    with pytest.raises(NotImplementedError):
+        col.in_([1, "a", 3.5])
+
+
+def test_column_membership_failure_unsupported_type():
+    col = Column("column1", "table1")
+    with pytest.raises(NotImplementedError):
+        col.in_([{"key": "value"}])
+
+
 def test_expression_str():
     expr = Expression("table1.column1", "=", "table2.column2")
     assert str(expr) == "table1.column1 = table2.column2"
