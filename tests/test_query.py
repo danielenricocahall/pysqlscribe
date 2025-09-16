@@ -336,3 +336,22 @@ def test_insert_returning_empty():
         query
         == 'INSERT INTO "employees" ("id","employee_name") VALUES (1,\'john doe\') RETURNING *'
     )
+
+
+def test_where_clause_with_subquery():
+    subquery_builder = QueryRegistry.get_builder("mysql")
+    subquery = (
+        subquery_builder.select("id").from_("employees").where("salary > 10000").build()
+    )
+
+    query_builder = QueryRegistry.get_builder("mysql")
+    query = (
+        query_builder.select("employee_name", "salary")
+        .from_("employees")
+        .where(f"id IN ({subquery})", "department = 'Engineering'")
+        .build()
+    )
+    assert (
+        query
+        == "SELECT `employee_name`,`salary` FROM `employees` WHERE id IN (SELECT `id` FROM `employees` WHERE salary > 10000) AND department = 'Engineering'"
+    )
