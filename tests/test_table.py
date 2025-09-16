@@ -160,3 +160,14 @@ def test_insert():
     table = MySQLTable("employees", "salary", "bonus")
     query = table.insert(table.salary, table.bonus, values=(100, 200)).build()
     assert query == "INSERT INTO `employees` (`salary`,`bonus`) VALUES (100,200)"
+
+
+def test_subquery_columns():
+    employees = MySQLTable("employees", "salary", "bonus", "department_id")
+    departments = MySQLTable("departments", "id", "name", "manager_id")
+    subquery = departments.select("id").where(departments.name == "Engineering")
+    query = employees.select().where(employees.department_id.in_(subquery)).build()
+    assert (
+        query
+        == "SELECT * FROM `employees` WHERE employees.department_id IN (SELECT `id` FROM `departments` WHERE departments.name = 'Engineering')"
+    )

@@ -237,6 +237,21 @@ Output:
 SELECT employees.salary * 0.75 AS salary_after_taxes FROM `employees`
 ```
 
+## Membership Operations
+Membership operations such as `IN` and `NOT IN` are supported:
+
+```python
+from pysqlscribe.table import MySQLTable
+table = MySQLTable("employees", "salary", "bonus", "department_id")
+query = table.select().where(table.department_id.in_([1, 2, 3])).build()
+
+```
+Output:
+
+```mysql
+SELECT * FROM `employees` WHERE department_id IN (1,2,3)
+
+```
 
 ## Functions
 
@@ -333,6 +348,23 @@ Output:
 SELECT "first_name" AS name FROM "employee" AS e
 ```
 
+## Subqueries
+Subqueries can be used when evaluating `Column`s in the form of a membership:
+
+```python
+from pysqlscribe.table import MySQLTable
+
+employees = MySQLTable("employees", "salary", "bonus", "department_id")
+departments = MySQLTable("departments", "id", "name", "manager_id")
+subquery = departments.select("id").where(departments.name == "Engineering")
+query = employees.select().where(employees.department_id.in_(subquery)).build()
+```
+
+Output:
+
+```mysql
+SELECT * FROM `employees` WHERE employees.department_id IN (SELECT `id` FROM `departments` WHERE departments.name = 'Engineering')
+```
 ## Inserts
 While the primary focus of this library is on building retrieval (`"SELECT"`) queries, you can also build `INSERT` queries:
 
@@ -514,7 +546,6 @@ This is anticipated to grow, also there are certainly operations that are missin
 # TODO
 - [ ] Add more dialects
 - [ ] Support `OFFSET` for Oracle and SQLServer
-- [ ] Support subqueries
 - [ ] Improved injection mitigation  
 - [ ] Support more aggregate and scalar functions
 - [ ] Enhance how where clauses are handled
