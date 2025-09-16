@@ -358,7 +358,6 @@ def test_where_clause_with_subquery():
 
 
 def test_subquery():
-    from pysqlscribe.query import QueryRegistry
 
     query_builder = QueryRegistry.get_builder("mysql")
     another_query_builder = QueryRegistry.get_builder("mysql")
