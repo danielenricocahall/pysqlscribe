@@ -387,7 +387,7 @@ query = employees.select().where(employees.department_id.in_(subquery)).build()
 Output:
 
 ```mysql
-SELECT * FROM `employees` WHERE employees.department_id IN (SELECT `id` FROM `departments` WHERE name = 'Engineering')
+SELECT * FROM `employees` WHERE employees.department_id IN (SELECT `id` FROM `departments` WHERE departments.name = 'Engineering')
 ```
 ## Inserts
 While the primary focus of this library is on building retrieval (`"SELECT"`) queries, you can also build `INSERT` queries:
