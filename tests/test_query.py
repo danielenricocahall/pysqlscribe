@@ -93,11 +93,12 @@ def test_group_by_having():
         )
         .from_("sales")
         .group_by("product_line")
+        .having("SUM(total) > 1000")
         .build()
     )
     assert (
         query
-        == 'SELECT "product_line",AVG(unit_price),SUM(quantity),SUM(total) FROM "sales" GROUP BY "product_line"'
+        == 'SELECT "product_line",AVG(unit_price),SUM(quantity),SUM(total) FROM "sales" GROUP BY "product_line" HAVING SUM(total) > 1000'
     )
 
 

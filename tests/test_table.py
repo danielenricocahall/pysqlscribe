@@ -1,5 +1,6 @@
 import pytest
 
+from pysqlscribe.aggregate_functions import avg
 from pysqlscribe.query import JoinType
 
 from pysqlscribe.table import (
@@ -170,4 +171,18 @@ def test_subquery_columns():
     assert (
         query
         == "SELECT * FROM `employees` WHERE employees.department_id IN (SELECT `id` FROM `departments` WHERE departments.name = 'Engineering')"
+    )
+
+
+def test_groupby_having():
+    table = MySQLTable("employees", "salary", "department_id")
+    query = (
+        table.select(table.department_id, avg(table.salary).as_("avg_salary"))
+        .group_by(table.department_id)
+        .having(avg(table.salary) > 10000)
+        .build()
+    )
+    assert (
+        query
+        == "SELECT `department_id`,AVG(salary) AS avg_salary FROM `employees` GROUP BY `department_id` HAVING AVG(salary) > 10000"
     )
