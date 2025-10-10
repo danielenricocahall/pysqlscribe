@@ -19,6 +19,7 @@ from pysqlscribe.scalar_functions import (
     rtrim,
     trim,
     trunc,
+    nullif,
 )
 from pysqlscribe.table import PostgresTable
 
@@ -137,3 +138,15 @@ def test_rounding_functions(rounding_function_name, rounding_function):
 
     query = payroll_table.select(rounding_function(100.5678, 2)).build()
     assert query == f'SELECT {rounding_function_name}(100.5678, 2) FROM "payroll"'
+
+
+def test_nullif():
+    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    query = payroll_table.select(nullif(payroll_table.salary, 0)).build()
+    assert query == 'SELECT NULLIF(salary, 0) FROM "payroll"'
+
+    query = payroll_table.select(nullif(0, payroll_table.salary)).build()
+    assert query == 'SELECT NULLIF(0, salary) FROM "payroll"'
+
+    query = payroll_table.select(nullif(0, 100)).build()
+    assert query == 'SELECT NULLIF(0, 100) FROM "payroll"'

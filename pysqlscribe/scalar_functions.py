@@ -109,3 +109,20 @@ def concat(*args: Column | str | int):
         )
     args = [f"'{arg}'" if not isinstance(arg, Column) else str(arg) for arg in args]
     return f"{ScalarFunctions.CONCAT}({', '.join(args)})"
+
+
+def nullif(value1: Column | str | int, value2: Column | str | int):
+    if all(isinstance(arg, Column) for arg in (value1, value2)):
+        return ExpressionColumn(
+            f"{ScalarFunctions.NULLIF}({value1.name}, {value2.name})",
+            value1.table_name,
+        )
+    if isinstance(value1, Column):
+        value1 = value1.name
+    if isinstance(value1, str):
+        value1 = int(value1) if value1.isdigit() else value1
+    if isinstance(value2, Column):
+        value2 = value2.name
+    if isinstance(value2, str):
+        value2 = int(value2) if value2.isdigit() else value2
+    return f"NULLIF({value1}, {value2})"

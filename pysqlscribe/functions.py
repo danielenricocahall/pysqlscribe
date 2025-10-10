@@ -32,6 +32,7 @@ class ScalarFunctions(str, Enum):
     LTRIM = "LTRIM"
     RTRIM = "RTRIM"
     TRIM = "TRIM"
+    NULLIF = "NULLIF"
 
     def __str__(self):
         return self.value
