@@ -125,4 +125,14 @@ def nullif(value1: Column | str | int, value2: Column | str | int):
         value2 = value2.name
     if isinstance(value2, str):
         value2 = int(value2) if value2.isdigit() else value2
-    return f"NULLIF({value1}, {value2})"
+    return f"{ScalarFunctions.NULLIF}({value1}, {value2})"
+
+
+def coalesce(*args: Column | str | int):
+    if all(isinstance(arg, Column) for arg in args):
+        return ExpressionColumn(
+            f"COALESCE({', '.join(arg.name for arg in args)})",
+            args[0].table_name,
+        )
+    args = [f"'{arg}'" if not isinstance(arg, Column) else str(arg) for arg in args]
+    return f"COALESCE({', '.join(args)})"
