@@ -24,6 +24,14 @@ class ScalarFunctions(str, Enum):
     UPPER = "UPPER"
     LOWER = "LOWER"
     CONCAT = "CONCAT"
+    POWER = "POWER"
+    LN = "LN"
+    EXP = "EXP"
+    TRUNC = "TRUNC"
+    REVERSE = "REVERSE"
+    LTRIM = "LTRIM"
+    RTRIM = "RTRIM"
+    TRIM = "TRIM"
 
     def __str__(self):
         return self.value

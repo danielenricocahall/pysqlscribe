@@ -11,6 +11,14 @@ from pysqlscribe.scalar_functions import (
     lower,
     ScalarFunctions,
     concat,
+    power,
+    exp,
+    ln,
+    reverse,
+    ltrim,
+    rtrim,
+    trim,
+    trunc,
 )
 from pysqlscribe.table import PostgresTable
 
@@ -63,7 +71,13 @@ def test_agg_function_with_non_column_object(agg_column):
         (ceil, ScalarFunctions.CEIL),
         (round_, ScalarFunctions.ROUND),
         (upper, ScalarFunctions.UPPER),
+        (reverse, ScalarFunctions.REVERSE),
         (lower, ScalarFunctions.LOWER),
+        (exp, ScalarFunctions.EXP),
+        (ln, ScalarFunctions.LN),
+        (ltrim, ScalarFunctions.LTRIM),
+        (rtrim, ScalarFunctions.RTRIM),
+        (trim, ScalarFunctions.TRIM),
     ],
 )
 def test_scalar_functions(scalar_function, str_function):
@@ -92,3 +106,34 @@ def test_concat_with_columns():
         concat(payroll_table.first_name, payroll_table.last_name).as_("full_name")
     ).build()
     assert query == 'SELECT CONCAT(first_name, last_name) AS full_name FROM "payroll"'
+
+
+def test_power_with_column():
+    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    query = payroll_table.select(power(payroll_table.salary, 2)).build()
+    assert query == 'SELECT POWER(salary, 2) FROM "payroll"'
+    query = payroll_table.select(power(2, payroll_table.salary)).build()
+    assert query == 'SELECT POWER(2, salary) FROM "payroll"'
+
+
+@pytest.mark.parametrize("base,exponent", [(2, 3), ("2", 3), (2, "3")])
+def test_power_with_non_column(base, exponent):
+    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    query = payroll_table.select(power(base, exponent)).build()
+    assert query == f'SELECT POWER({base}, {exponent}) FROM "payroll"'
+
+
+@pytest.mark.parametrize(
+    "rounding_function_name,rounding_function",
+    [(ScalarFunctions.ROUND, round_), (ScalarFunctions.TRUNC, trunc)],
+)
+def test_rounding_functions(rounding_function_name, rounding_function):
+    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    query = payroll_table.select(rounding_function(payroll_table.salary)).build()
+    assert query == f'SELECT {rounding_function_name}(salary) FROM "payroll"'
+
+    query = payroll_table.select(rounding_function(payroll_table.salary, 2)).build()
+    assert query == f'SELECT {rounding_function_name}(salary, 2) FROM "payroll"'
+
+    query = payroll_table.select(rounding_function(100.5678, 2)).build()
+    assert query == f'SELECT {rounding_function_name}(100.5678, 2) FROM "payroll"'

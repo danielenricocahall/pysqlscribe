@@ -10,16 +10,35 @@ AGGREGATE_IDENTIFIER_REGEX = re.compile(
     rf"^({'|'.join(AggregateFunctions)})\((\*|\d+|[\w]+)\)$", re.IGNORECASE
 )
 
+# Safely build the function-name alternation
+FUNC_ALT = "|".join(map(re.escape, ScalarFunctions))
+
+# table, table.col, schema.table.col
+COLUMN = r"[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*"
+
+# integers, floats, .5, 1., scientific notation, with optional sign
+NUMBER = r"[+\-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+\-]?\d+)?"
+
+# single-quoted string with doubled-quote escaping: 'it''s fine'
+STRING = r"'(?:[^']|'')*'"
+
+# allow *, numbers, identifiers, or strings
+ARG = rf"(?:\*|{NUMBER}|{COLUMN}|{STRING})"
+
 SCALAR_IDENTIFIER_REGEX = re.compile(
-    rf"^({'|'.join(ScalarFunctions)})\(\s*(\*|\d+|\w+|'.*?')\s*(?:,\s*(\*|\d+|\w+|'.*?')\s*)*\)$",
+    rf"^\s*(?:{FUNC_ALT})\s*\(\s*{ARG}(?:\s*,\s*{ARG})*\s*\)\s*$",
     re.IGNORECASE,
 )
 
 
-COLUMN_IDENTIFIER_REGEX = r"[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*"
+COLUMN_IDENTIFIER_REGEX = r"[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*"
+NUMBER_REGEX = r"[+\-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+\-]?\d+)?"
+TERM_REGEX = rf"(?:{COLUMN_IDENTIFIER_REGEX}|{NUMBER_REGEX})"
 
+
+# keep your arithmetic expression matcher (already fixed earlier)
 EXPRESSION_IDENTIFIER_REGEX = re.compile(
-    rf"^\s*({COLUMN_IDENTIFIER_REGEX}|\d+(\.\d+)?)(\s*[\+\-\*/]\s*({COLUMN_IDENTIFIER_REGEX}|\d+(\.\d+)?))*\s*$"
+    rf"^\s*{TERM_REGEX}(?:\s*[\+\-\*/]\s*{TERM_REGEX})*\s*$"
 )
 
 CONSTRAINT_PREFIX_REGEX = r"^(PRIMARY|FOREIGN|CONSTRAINT|UNIQUE|INDEX)"

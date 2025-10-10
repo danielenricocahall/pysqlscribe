@@ -40,6 +40,22 @@ def lower(column: Column | str):
     return _scalar_function(ScalarFunctions.LOWER, column)
 
 
+def ltrim(column: Column | str):
+    return _scalar_function(ScalarFunctions.LTRIM, column)
+
+
+def rtrim(column: Column | str):
+    return _scalar_function(ScalarFunctions.RTRIM, column)
+
+
+def trim(column: Column | str):
+    return _scalar_function(ScalarFunctions.TRIM, column)
+
+
+def reverse(column: Column | str):
+    return _scalar_function(ScalarFunctions.REVERSE, column)
+
+
 def round_(column: Column | str, decimals: int | None = None):
     if not decimals:
         return _scalar_function(ScalarFunctions.ROUND, column)
@@ -48,6 +64,41 @@ def round_(column: Column | str, decimals: int | None = None):
     return ExpressionColumn(
         f"{ScalarFunctions.ROUND}({column.name}, {decimals})", column.table_name
     )
+
+
+def trunc(column: Column | str, decimals: int | None = None):
+    if not decimals:
+        return _scalar_function(ScalarFunctions.TRUNC, column)
+    if not isinstance(column, Column):
+        return f"{ScalarFunctions.TRUNC}({column}, {decimals})"
+    return ExpressionColumn(
+        f"{ScalarFunctions.TRUNC}({column.name}, {decimals})", column.table_name
+    )
+
+
+def power(base: Column | str | int, exponent: Column | str | int):
+    if all(isinstance(arg, Column) for arg in (base, exponent)):
+        return ExpressionColumn(
+            f"{ScalarFunctions.POWER}({base.name}, {exponent.name})",
+            base.table_name,
+        )
+    if isinstance(base, Column):
+        base = base.name
+    if isinstance(base, str):
+        base = int(base) if base.isdigit() else base
+    if isinstance(exponent, Column):
+        exponent = exponent.name
+    if isinstance(exponent, str):
+        exponent = int(exponent) if exponent.isdigit() else exponent
+    return f"{ScalarFunctions.POWER}({base}, {exponent})"
+
+
+def ln(column: Column | str | int):
+    return _scalar_function(ScalarFunctions.LN, column)
+
+
+def exp(column: Column | str | int):
+    return _scalar_function(ScalarFunctions.EXP, column)
 
 
 def concat(*args: Column | str | int):
