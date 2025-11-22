@@ -148,10 +148,26 @@ class Column(AliasMixin):
     def ilike(self, pattern: str) -> Expression:
         return self._comparison_expression("ILIKE", pattern)
 
+    def _between(self, low, high, operator) -> Expression:
+        def resolve_column_names(low):
+            if isinstance(low, Column):
+                return low.fully_qualified_name
+            elif isinstance(low, str):
+                return f"'{low}'"
+            elif isinstance(low, (int, float)):
+                return str(low)
+
+        low_expr = resolve_column_names(low)
+        high_expr = resolve_column_names(high)
+        return Expression(
+            self.fully_qualified_name, operator, f"{low_expr} AND {high_expr}"
+        )
+
     def between(self, low, high) -> Expression:
-        low_expr = self._comparison_expression(">=", low)
-        high_expr = self._comparison_expression("<=", high)
-        return Expression(f"({low_expr})", "AND", f"({high_expr})")
+        return self._between(low, high, "BETWEEN")
+
+    def not_between(self, low, high) -> Expression:
+        return self._between(low, high, "NOT BETWEEN")
 
 
 class ExpressionColumn(Column):

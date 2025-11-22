@@ -89,7 +89,13 @@ def test_column_like_comparisons():
 def test_column_between():
     col = Column("column1", "table1")
     between_expr = col.between(10, 20)
-    assert str(between_expr) == "(table1.column1 >= 10) AND (table1.column1 <= 20)"
+    assert str(between_expr) == "table1.column1 BETWEEN 10 AND 20"
+
+
+def test_column_not_between():
+    col = Column("column1", "table1")
+    not_between_expr = col.not_between(30, 40)
+    assert str(not_between_expr) == "table1.column1 NOT BETWEEN 30 AND 40"
 
 
 def test_expression_str():
