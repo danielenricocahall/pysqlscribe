@@ -106,6 +106,9 @@ class Table(ABC, AliasMixin):
         if not VALID_IDENTIFIER_REGEX.match(table_name_):
             raise InvalidTableNameException(f"Invalid table name {table_name_}")
         self._table_name = table_name_
+        if getattr(self, "_columns", None):
+            # ensure that we re-assign our column attributes with the correct fully qualified name
+            self.columns = self.columns
 
     @property
     def columns(self):

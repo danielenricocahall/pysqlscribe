@@ -139,6 +139,36 @@ class Column(AliasMixin):
     def not_in(self, values: Iterable[str | int | float] | Subqueryish) -> Expression:
         return self._membership_expression("NOT IN", values)
 
+    def like(self, pattern: str) -> Expression:
+        return self._comparison_expression("LIKE", pattern)
+
+    def not_like(self, pattern: str) -> Expression:
+        return self._comparison_expression("NOT LIKE", pattern)
+
+    def ilike(self, pattern: str) -> Expression:
+        return self._comparison_expression("ILIKE", pattern)
+
+    def _between(self, low, high, operator) -> Expression:
+        def resolve_column_names(low):
+            if isinstance(low, Column):
+                return low.fully_qualified_name
+            elif isinstance(low, str):
+                return f"'{low}'"
+            elif isinstance(low, (int, float)):
+                return str(low)
+
+        low_expr = resolve_column_names(low)
+        high_expr = resolve_column_names(high)
+        return Expression(
+            self.fully_qualified_name, operator, f"{low_expr} AND {high_expr}"
+        )
+
+    def between(self, low, high) -> Expression:
+        return self._between(low, high, "BETWEEN")
+
+    def not_between(self, low, high) -> Expression:
+        return self._between(low, high, "NOT BETWEEN")
+
 
 class ExpressionColumn(Column):
     """Representation of a column that is the result of an arithmetic operation. Main benefit is to ensure the
