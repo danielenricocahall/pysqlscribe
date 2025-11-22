@@ -77,6 +77,21 @@ def test_column_membership_failure_unsupported_type():
         col.in_([{"key": "value"}])
 
 
+def test_column_like_comparisons():
+    col = Column("column1", "table1")
+    assert str(col.like("%pattern%")) == "table1.column1 LIKE '%pattern%'"
+    assert str(col.not_like("exact")) == "table1.column1 NOT LIKE 'exact'"
+    assert (
+        str(col.ilike("case_insensitive")) == "table1.column1 ILIKE 'case_insensitive'"
+    )
+
+
+def test_column_between():
+    col = Column("column1", "table1")
+    between_expr = col.between(10, 20)
+    assert str(between_expr) == "(table1.column1 >= 10) AND (table1.column1 <= 20)"
+
+
 def test_expression_str():
     expr = Expression("table1.column1", "=", "table2.column2")
     assert str(expr) == "table1.column1 = table2.column2"

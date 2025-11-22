@@ -186,3 +186,13 @@ def test_groupby_having():
         query
         == "SELECT `department_id`,AVG(salary) AS avg_salary FROM `employees` GROUP BY `department_id` HAVING AVG(salary) > 10000"
     )
+
+
+def test_rename_table():
+    table = MySQLTable("old_table_name", "column1", "column2")
+    table.table_name = "new_table_name"
+    query = table.select("column1", "column2").where(table.column1 > 1).build()
+    assert (
+        query
+        == "SELECT `column1`,`column2` FROM `new_table_name` WHERE new_table_name.column1 > 1"
+    )
