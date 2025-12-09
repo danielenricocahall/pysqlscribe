@@ -20,6 +20,12 @@ from pysqlscribe.scalar_functions import (
     trim,
     trunc,
     nullif,
+    cos,
+    sin,
+    tan,
+    atan2,
+    acos,
+    asin,
 )
 from pysqlscribe.table import PostgresTable
 
@@ -79,6 +85,11 @@ def test_agg_function_with_non_column_object(agg_column):
         (ltrim, ScalarFunctions.LTRIM),
         (rtrim, ScalarFunctions.RTRIM),
         (trim, ScalarFunctions.TRIM),
+        (cos, ScalarFunctions.COS),
+        (sin, ScalarFunctions.SIN),
+        (tan, ScalarFunctions.TAN),
+        (acos, ScalarFunctions.ACOS),
+        (asin, ScalarFunctions.ASIN),
     ],
 )
 def test_scalar_functions(scalar_function, str_function):
@@ -150,3 +161,15 @@ def test_nullif():
 
     query = payroll_table.select(nullif(0, 100)).build()
     assert query == 'SELECT NULLIF(0, 100) FROM "payroll"'
+
+
+def test_atan2():
+    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    query = payroll_table.select(atan2(payroll_table.salary, 100)).build()
+    assert query == 'SELECT ATAN2(salary, 100) FROM "payroll"'
+
+    query = payroll_table.select(atan2(100, payroll_table.salary)).build()
+    assert query == 'SELECT ATAN2(100, salary) FROM "payroll"'
+
+    query = payroll_table.select(atan2(50, 100)).build()
+    assert query == 'SELECT ATAN2(50, 100) FROM "payroll"'

@@ -120,3 +120,36 @@ def coalesce(*args: Column | str | int):
         )
     args = [f"'{arg}'" if not isinstance(arg, Column) else str(arg) for arg in args]
     return f"{ScalarFunctions.COALESCE}({', '.join(args)})"
+
+
+def acos(column: Column | str | int):
+    return _scalar_function(ScalarFunctions.ACOS, column)
+
+
+def asin(column: Column | str | int):
+    return _scalar_function(ScalarFunctions.ASIN, column)
+
+
+def atan(column: Column | str | int):
+    return _scalar_function(ScalarFunctions.ATAN, column)
+
+
+def atan2(y: Column | str | int, x: Column | str | int):
+    if all(isinstance(arg, Column) for arg in (y, x)):
+        return ExpressionColumn(
+            f"{ScalarFunctions.ATAN2}({y}, {x})",
+            y.table_name,
+        )
+    return f"{ScalarFunctions.ATAN2}({y}, {x})"
+
+
+def cos(column: Column | str | int):
+    return _scalar_function(ScalarFunctions.COS, column)
+
+
+def sin(column: Column | str | int):
+    return _scalar_function(ScalarFunctions.SIN, column)
+
+
+def tan(column: Column | str | int):
+    return _scalar_function(ScalarFunctions.TAN, column)

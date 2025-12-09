@@ -34,6 +34,16 @@ class ScalarFunctions(str, Enum):
     TRIM = "TRIM"
     NULLIF = "NULLIF"
     COALESCE = "COALESCE"
+    ACOS = "ACOS"
+    ASIN = "ASIN"
+    ATAN = "ATAN"
+    ATAN2 = "ATAN2"
+    COS = "COS"
+    SIN = "SIN"
+    TAN = "TAN"
+    SINH = "SINH"
+    COSH = "COSH"
+    TANH = "TANH"
 
     def __str__(self):
         return self.value
