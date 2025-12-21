@@ -57,6 +57,22 @@ def test_select_query_with_limit_and_offset():
     )
 
 
+def test_select_query_with_limit_and_offset_oracle():
+    query_builder = QueryRegistry.get_builder("oracle")
+    query = (
+        query_builder.select("test_column")
+        .from_("test_table")
+        .order_by("test_column")
+        .offset(10)
+        .limit(5)
+        .build()
+    )
+    assert (
+        query
+        == f"SELECT {query_builder.escape_identifier('test_column')} FROM {query_builder.escape_identifier('test_table')} ORDER BY {query_builder.escape_identifier('test_column')} OFFSET 10 FETCH NEXT 5 ROWS ONLY"
+    )
+
+
 def test_select_query_with_order_by():
     query_builder = QueryRegistry.get_builder("mysql")
     query = (

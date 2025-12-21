@@ -392,22 +392,22 @@ class Query(ABC):
         self.node = self.node.next_
         return self
 
-    def inner_join(self, table: str, condition: str):
+    def inner_join(self, table: str, condition: str) -> Self:
         return self.join(table, JoinType.INNER, condition)
 
-    def outer_join(self, table: str, condition: str):
+    def outer_join(self, table: str, condition: str) -> Self:
         return self.join(table, JoinType.OUTER, condition)
 
-    def left_join(self, table: str, condition: str):
+    def left_join(self, table: str, condition: str) -> Self:
         return self.join(table, JoinType.LEFT, condition)
 
-    def right_join(self, table: str, condition: str):
+    def right_join(self, table: str, condition: str) -> Self:
         return self.join(table, JoinType.RIGHT, condition)
 
-    def cross_join(self, table: str):
+    def cross_join(self, table: str) -> Self:
         return self.join(table, JoinType.CROSS)
 
-    def natural_join(self, table: str):
+    def natural_join(self, table: str) -> Self:
         return self.join(table, JoinType.NATURAL)
 
     def where(self, *args) -> Self:
@@ -431,12 +431,12 @@ class Query(ABC):
         self.node = self.node.next_
         return self
 
-    def limit(self, n: int | str):
+    def limit(self, n: int | str) -> Self:
         self.node.add(LimitNode({"limit": int(n)}))
         self.node = self.node.next_
         return self
 
-    def offset(self, n: int | str):
+    def offset(self, n: int | str) -> Self:
         self.node.add(OffsetNode({"offset": int(n)}))
         self.node = self.node.next_
         return self
@@ -544,9 +544,37 @@ class OracleQuery(Query):
     def _escape_identifier(self, identifier: str) -> str:
         return f'"{identifier}"'
 
-    def limit(self, n: int | str):
+    def limit(self, n: int | str) -> Self:
         self.node.add(FetchNextNode({"limit": int(n)}))
         self.node = self.node = self.node.next_
+        return self
+
+    def offset(self, n: int | str) -> Self:
+        class OracleOffsetNode(OffsetNode):
+            @property
+            def valid_next_nodes(self):
+                return FetchNextNode
+
+        self.node.add(OracleOffsetNode({"offset": int(n)}))
+        self.node = self.node.next_
+        return self
+
+    def order_by(self, *args) -> Self:
+        class OracleOrderByNode(OrderByNode):
+            @property
+            def valid_next_nodes(self):
+                return OffsetNode
+
+        self.node.add(
+            OracleOrderByNode(
+                {
+                    "columns": reconcile_args_into_string(
+                        args, escape_identifier=self.escape_identifier
+                    )
+                }
+            )
+        )
+        self.node = self.node.next_
         return self
 
 
