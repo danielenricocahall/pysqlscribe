@@ -36,7 +36,6 @@ NUMBER_REGEX = r"[+\-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+\-]?\d+)?"
 TERM_REGEX = rf"(?:{COLUMN_IDENTIFIER_REGEX}|{NUMBER_REGEX})"
 
 
-# keep your arithmetic expression matcher (already fixed earlier)
 EXPRESSION_IDENTIFIER_REGEX = re.compile(
     rf"^\s*{TERM_REGEX}(?:\s*[\+\-\*/]\s*{TERM_REGEX})*\s*$"
 )
