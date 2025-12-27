@@ -500,7 +500,7 @@ SELECT test_column,another_test_column FROM `test_table` WHERE test_column = 1 A
 Alternatively, if you don't want to change existing code or you have several `Query` or `Table` objects you want to apply this setting to (and don't plan on swapping settings), you can set the environment variable `PYSQLSCRIBE_ESCAPE_IDENTIFIERS` to `"False"` or `"0"`.
 
 # DDL Parser/Loader
-`pysqlscribe` also has a simple DDL parser which can load/create `Table` objecs from a DDL file (or directory containing DDL files):
+`pysqlscribe` also has a simple DDL parser which can load/create `Table` objects from a DDL file (or directory containing DDL files):
 
 ```python
 
