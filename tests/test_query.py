@@ -1,14 +1,13 @@
 from itertools import product
 
 import pytest
+
+from pysqlscribe.exceptions import InvalidJoinException
 from pysqlscribe.query import (
     QueryRegistry,
     JoinType,
-    InvalidJoinException,
-    UNION,
-    EXCEPT,
-    INTERSECT,
 )
+from pysqlscribe.ast.nodes import UNION, EXCEPT, INTERSECT
 
 
 @pytest.mark.parametrize(

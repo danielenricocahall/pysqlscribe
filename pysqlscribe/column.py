@@ -1,6 +1,7 @@
 from typing import Self, Iterable, Protocol, runtime_checkable
 
 from pysqlscribe.alias import AliasMixin
+from pysqlscribe.exceptions import InvalidColumnNameException
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
     AGGREGATE_IDENTIFIER_REGEX,
@@ -20,9 +21,6 @@ class Expression:
 
     def __repr__(self):
         return f"Expression({self.left!r}, {self.operator!r}, {self.right!r})"
-
-
-class InvalidColumnNameException(Exception): ...
 
 
 @runtime_checkable
