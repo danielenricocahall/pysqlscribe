@@ -127,12 +127,9 @@ class Renderer:
     def render_insert(self, node: InsertNode) -> str:
         columns = self.dialect.normalize_identifiers_args(node.state["columns"])
         table = self.dialect.normalize_identifiers_args(node.state["table"])
-        if isinstance(node.state["values"], str):
-            values = f"({node.state['values']})"
-        elif isinstance(node.state["values"], list):
-            values = ",".join([f"({v})" for v in node.state["values"]])
-        else:
-            raise ValueError(f"Invalid values: {node.state['values']}")
+        values = self._resolve_insert_values(
+            node.state["columns"], node.state["values"]
+        )
         columns = f" ({columns})" if columns else ""
         return f"{INSERT} {INTO} {table}{columns} {VALUES} {values}"
 
@@ -148,3 +145,14 @@ class Renderer:
         else:
             columns = self.dialect.normalize_identifiers_args(args)
         return columns
+
+    @staticmethod
+    def _resolve_insert_values(columns, values) -> str:
+        if isinstance(values, tuple):
+            values = [values]
+        assert all(
+            (len(columns) == 0 or len(columns) == len(value) for value in values)
+        ), "Number of columns and values must match"
+        values = [f"{','.join(map(str, value))}" for value in values]
+        values = ",".join([f"({v})" for v in values])
+        return values

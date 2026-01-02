@@ -283,7 +283,7 @@ def test_insert_column_and_values_mismatch():
     with pytest.raises(AssertionError):
         query_builder.insert(
             "test_column", "another_test_column", into="test_table", values=(1,)
-        )
+        ).build()
 
 
 def test_insert_no_table_provided():

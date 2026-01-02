@@ -56,7 +56,6 @@ class Query(ABC):
         values = kwargs.get("values")
         if table is None or values is None:
             raise ValueError("Insert queries require `into` and `values` keywords.")
-        values = self._resolve_insert_values(columns, values)
         if not self.node:
             self.node = InsertNode(
                 {"columns": columns, "table": table, "values": values}
@@ -67,16 +66,6 @@ class Query(ABC):
         self.node.add(ReturningNode({"columns": list(args)}), self.dialect)
         self.node = self.node.next_
         return self
-
-    @staticmethod
-    def _resolve_insert_values(columns, values) -> list[str]:
-        if isinstance(values, tuple):
-            values = [values]
-        assert all(
-            (len(columns) == 0 or len(columns) == len(value) for value in values)
-        ), "Number of columns and values must match"
-        values = [f"{','.join(map(str, value))}" for value in values]
-        return values
 
     def join(
         self, table: str, join_type: str = JoinType.INNER, condition: str | None = None
