@@ -21,7 +21,7 @@ def test_select_query(fields):
     fields = [
         query_builder.dialect.escape_identifier(identifier) for identifier in fields
     ]
-    assert query == f"SELECT {','.join(fields)} FROM `test_table`"
+    assert query == f"SELECT {', '.join(fields)} FROM `test_table`"
 
 
 def test_select_query_no_columns():
@@ -68,7 +68,7 @@ def test_select_query_with_order_by():
     )
     assert (
         query
-        == "SELECT `test_column`,`another_test_column` FROM `test_table` ORDER BY `test_column`"
+        == "SELECT `test_column`, `another_test_column` FROM `test_table` ORDER BY `test_column`"
     )
 
 
@@ -82,7 +82,7 @@ def test_where_clause():
     )
     assert (
         query
-        == "SELECT `test_column`,`another_test_column` FROM `test_table` WHERE test_column = 1 AND another_test_column > 2"
+        == "SELECT `test_column`, `another_test_column` FROM `test_table` WHERE test_column = 1 AND another_test_column > 2"
     )
 
 
@@ -99,7 +99,7 @@ def test_group_by_having():
     )
     assert (
         query
-        == 'SELECT "product_line",AVG(unit_price),SUM(quantity),SUM(total) FROM "sales" GROUP BY "product_line" HAVING SUM(total) > 1000'
+        == 'SELECT "product_line", AVG(unit_price), SUM(quantity), SUM(total) FROM "sales" GROUP BY "product_line" HAVING SUM(total) > 1000'
     )
 
 
@@ -114,7 +114,7 @@ def test_joins_with_conditions(join_type: JoinType):
     query = query_builder.build()
     assert (
         query
-        == f'SELECT "employee_id","store_location" FROM "employees" {join_type} JOIN "payroll" ON employees.payroll_id = payroll.id'
+        == f'SELECT "employee_id", "store_location" FROM "employees" {join_type} JOIN "payroll" ON employees.payroll_id = payroll.id'
     )
 
 
@@ -127,7 +127,7 @@ def test_joins_no_condition(join_type: JoinType):
     query = query_builder.build()
     assert (
         query
-        == f'SELECT "employee_id","store_location" FROM "employees" {join_type} JOIN "payroll"'
+        == f'SELECT "employee_id", "store_location" FROM "employees" {join_type} JOIN "payroll"'
     )
 
 
@@ -150,7 +150,7 @@ def test_join_where_with_conditions(join_type: JoinType):
     query = query_builder.build()
     assert (
         query
-        == f'SELECT "employee_id","store_location" FROM "employees" {join_type} JOIN "payroll" ON employees.payroll_id = payroll.id WHERE employee.salary > 10000'
+        == f'SELECT "employee_id", "store_location" FROM "employees" {join_type} JOIN "payroll" ON employees.payroll_id = payroll.id WHERE employee.salary > 10000'
     )
 
 
@@ -164,7 +164,7 @@ def test_disable_escape_identifier():
     )
     assert (
         query
-        == "SELECT test_column,another_test_column FROM test_table WHERE test_column = 1 AND another_test_column > 2"
+        == "SELECT test_column, another_test_column FROM test_table WHERE test_column = 1 AND another_test_column > 2"
     )
 
 
@@ -179,7 +179,7 @@ def test_escape_identifier_switch_preferences():
     )
     assert (
         query
-        == "SELECT test_column,another_test_column FROM `test_table` WHERE test_column = 1 AND another_test_column > 2"
+        == "SELECT test_column, another_test_column FROM `test_table` WHERE test_column = 1 AND another_test_column > 2"
     )
 
 
@@ -194,7 +194,7 @@ def test_disable_escape_identifier_with_environment_variable(monkeypatch):
     )
     assert (
         query
-        == "SELECT test_column,another_test_column FROM test_table WHERE test_column = 1 AND another_test_column > 2"
+        == "SELECT test_column, another_test_column FROM test_table WHERE test_column = 1 AND another_test_column > 2"
     )
 
 
@@ -254,7 +254,7 @@ def test_insert():
     ).build()
     assert (
         query
-        == "INSERT INTO `test_table` (`test_column`,`another_test_column`) VALUES (1,2)"
+        == "INSERT INTO `test_table` (`test_column`, `another_test_column`) VALUES (1,2)"
     )
 
 
@@ -274,7 +274,7 @@ def test_insert_multiple_values():
     ).build()
     assert (
         query
-        == "INSERT INTO `test_table` (`test_column`,`another_test_column`) VALUES (1,2),(3,4)"
+        == "INSERT INTO `test_table` (`test_column`, `another_test_column`) VALUES (1,2),(3,4)"
     )
 
 
@@ -306,7 +306,7 @@ def test_insert_with_returning(return_value):
         return_value = query_builder.dialect.escape_identifier(return_value)
     assert (
         query
-        == f'INSERT INTO "employees" ("id","employee_name") VALUES (1,\'john doe\') RETURNING {return_value}'
+        == f'INSERT INTO "employees" ("id", "employee_name") VALUES (1,\'john doe\') RETURNING {return_value}'
     )
 
 
@@ -321,7 +321,7 @@ def test_insert_with_returning_multiple_values():
     )
     assert (
         query
-        == 'INSERT INTO "employees" ("id","employee_name") VALUES (1,\'john doe\') RETURNING "id","employee_name"'
+        == 'INSERT INTO "employees" ("id", "employee_name") VALUES (1,\'john doe\') RETURNING "id", "employee_name"'
     )
 
 
@@ -336,5 +336,5 @@ def test_insert_returning_empty():
     )
     assert (
         query
-        == 'INSERT INTO "employees" ("id","employee_name") VALUES (1,\'john doe\') RETURNING *'
+        == 'INSERT INTO "employees" ("id", "employee_name") VALUES (1,\'john doe\') RETURNING *'
     )

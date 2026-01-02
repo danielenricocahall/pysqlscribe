@@ -103,7 +103,7 @@ class Dialect(ABC):
             else:
                 identifiers.append(self.validate_identifier(identifier))
 
-        return ",".join(identifiers)
+        return ", ".join(identifiers)
 
     def validate_identifier(self, identifier: str) -> str:
         if VALID_IDENTIFIER_REGEX.match(identifier):
