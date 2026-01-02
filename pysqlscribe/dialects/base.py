@@ -1,5 +1,6 @@
 import os
 from abc import ABC, abstractmethod
+from typing import Callable, Dict
 
 from pysqlscribe.ast.base import Node
 from pysqlscribe.ast.nodes import (
@@ -128,3 +129,19 @@ class Dialect(ABC):
             if node is None:
                 break
         return query.strip()
+
+
+class DialectRegistry:
+    dialects: Dict[str, Callable[[], Dialect]] = {}
+
+    @classmethod
+    def register(cls, key: str):
+        def decorator(builder_class: Callable[[], Dialect]) -> Callable[[], Dialect]:
+            cls.dialects[key] = builder_class
+            return builder_class
+
+        return decorator
+
+    @classmethod
+    def get_dialect(cls, key: str) -> Dialect:
+        return cls.dialects[key]()

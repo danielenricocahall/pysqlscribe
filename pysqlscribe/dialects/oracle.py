@@ -1,7 +1,8 @@
 from pysqlscribe.ast.nodes import OffsetNode, FetchNextNode
-from pysqlscribe.dialects.base import Dialect
+from pysqlscribe.dialects.base import Dialect, DialectRegistry
 
 
+@DialectRegistry.register("oracle")
 class OracleDialect(Dialect):
     @property
     def valid_node_transitions(self):

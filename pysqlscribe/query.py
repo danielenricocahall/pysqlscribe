@@ -23,12 +23,9 @@ from pysqlscribe.ast.nodes import (
     FetchNextNode,
 )
 from pysqlscribe.dialects import (
-    OracleDialect,
-    PostgreSQLDialect,
     Dialect,
-    MySQLDialect,
-    SQLiteDialect,
 )
+from pysqlscribe.dialects.base import DialectRegistry
 from pysqlscribe.regex_patterns import (
     WILDCARD_REGEX,
 )
@@ -36,7 +33,10 @@ from pysqlscribe.regex_patterns import (
 
 class Query(ABC):
     node: Node | None = None
-    _dialect: Dialect
+    _dialect_key: str
+
+    def __init__(self):
+        self._dialect = DialectRegistry.get_dialect(self._dialect_key)
 
     @property
     def dialect(self) -> Dialect:
@@ -222,12 +222,12 @@ class QueryRegistry:
 
 @QueryRegistry.register("mysql")
 class MySQLQuery(Query):
-    _dialect: Dialect = MySQLDialect()
+    _dialect_key = "mysql"
 
 
 @QueryRegistry.register("oracle")
 class OracleQuery(Query):
-    _dialect: Dialect = OracleDialect()
+    _dialect_key = "oracle"
 
     def limit(self, n: int | str):
         self.node.add(FetchNextNode({"limit": int(n)}), self.dialect)
@@ -237,9 +237,9 @@ class OracleQuery(Query):
 
 @QueryRegistry.register("postgres")
 class PostgreSQLQuery(Query):
-    _dialect: Dialect = PostgreSQLDialect()
+    _dialect_key = "postgres"
 
 
 @QueryRegistry.register("sqlite")
 class SQLiteQuery(Query):
-    _dialect: Dialect = SQLiteDialect()
+    _dialect_key = "sqlite"
