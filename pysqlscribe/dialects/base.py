@@ -75,7 +75,7 @@ class Dialect(ABC):
             return identifier
         return self._escape_identifier(identifier)
 
-    def reconcile_args_into_string(self, *args) -> str:
+    def normalize_identifiers_arg(self, *args) -> str:
         arg = args[0]
         if isinstance(arg, str):
             arg = [arg]

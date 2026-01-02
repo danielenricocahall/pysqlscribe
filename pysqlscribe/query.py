@@ -51,7 +51,7 @@ class Query(ABC):
 
     def from_(self, *args) -> Self:
         self.node.add(
-            FromNode({"tables": self.dialect.reconcile_args_into_string(args)}),
+            FromNode({"tables": self.dialect.normalize_identifiers_arg(args)}),
             self.dialect,
         )
         self.node = self.node.next_
@@ -63,8 +63,8 @@ class Query(ABC):
         if table is None or values is None:
             raise ValueError("Insert queries require `into` and `values` keywords.")
         values = self._resolve_insert_values(columns, values)
-        columns = self.dialect.reconcile_args_into_string(columns)
-        table = self.dialect.reconcile_args_into_string(table)
+        columns = self.dialect.normalize_identifiers_arg(columns)
+        table = self.dialect.normalize_identifiers_arg(table)
         if not self.node:
             self.node = InsertNode(
                 {"columns": columns, "table": table, "values": values}
@@ -93,7 +93,7 @@ class Query(ABC):
         if WILDCARD_REGEX.match(args[0]):
             columns = args[0]
         else:
-            columns = self.dialect.reconcile_args_into_string(args)
+            columns = self.dialect.normalize_identifiers_arg(args)
         return columns
 
     def join(
@@ -103,7 +103,7 @@ class Query(ABC):
             JoinNode(
                 {
                     "join_type": join_type.upper(),
-                    "table": self.dialect.reconcile_args_into_string(table),
+                    "table": self.dialect.normalize_identifiers_arg(table),
                     "condition": condition,
                 }
             ),
@@ -140,7 +140,7 @@ class Query(ABC):
 
     def order_by(self, *args) -> Self:
         self.node.add(
-            OrderByNode({"columns": self.dialect.reconcile_args_into_string(args)}),
+            OrderByNode({"columns": self.dialect.normalize_identifiers_arg(args)}),
             self.dialect,
         )
         self.node = self.node.next_
@@ -158,7 +158,7 @@ class Query(ABC):
 
     def group_by(self, *args) -> Self:
         self.node.add(
-            GroupByNode({"columns": self.dialect.reconcile_args_into_string(args)}),
+            GroupByNode({"columns": self.dialect.normalize_identifiers_arg(args)}),
             self.dialect,
         )
         self.node = self.node.next_
