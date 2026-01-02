@@ -67,13 +67,13 @@ class Dialect(ABC):
             InsertNode: (ReturningNode,),
         }
 
-    @abstractmethod
-    def _escape_identifier(self, identifier: str): ...
-
     def escape_identifier(self, identifier: str):
         if not self.escape_identifiers_enabled:
             return identifier
         return self._escape_identifier(identifier)
+
+    @abstractmethod
+    def _escape_identifier(self, identifier: str): ...
 
     def normalize_identifiers_arg(self, *args) -> str:
         arg = args[0]
@@ -119,3 +119,12 @@ class Dialect(ABC):
     @escape_identifiers_enabled.setter
     def escape_identifiers_enabled(self, value: bool):
         self.__escape_identifiers_enabled = value
+
+    def render(self, node: Node) -> str:
+        query = ""
+        while True:
+            query = str(node) + " " + query
+            node = node.prev_
+            if node is None:
+                break
+        return query.strip()

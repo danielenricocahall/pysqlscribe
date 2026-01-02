@@ -1,6 +1,5 @@
 import operator
 from abc import ABC
-from copy import copy
 from functools import reduce
 from typing import Dict, Self, Callable
 
@@ -188,16 +187,8 @@ class Query(ABC):
         return self
 
     def build(self, clear: bool = True) -> str:
-        node = self.node
-        query = ""
-        while True:
-            query = str(node) + " " + query
-            node = node.prev_
-            if node is None:
-                break
+        query = self.dialect.render(self.node)
         if clear:
-            # we provide an option to not clear the builder in the event the developer needs
-            # to debug or needs to reuse the value. By default, we do immediately after building the query
             self.node = None
         return query.strip()
 
@@ -214,19 +205,19 @@ class Query(ABC):
 
 
 class QueryRegistry:
-    builders: Dict[str, Query] = {}
+    builders: Dict[str, Callable[[], Query]] = {}
 
     @classmethod
     def register(cls, key: str):
         def decorator(builder_class: Callable[[], Query]) -> Callable[[], Query]:
-            cls.builders[key] = builder_class()
+            cls.builders[key] = builder_class
             return builder_class
 
         return decorator
 
     @classmethod
     def get_builder(cls, key: str) -> Query:
-        return copy(cls.builders[key])
+        return cls.builders[key]()
 
 
 @QueryRegistry.register("mysql")
