@@ -34,7 +34,12 @@ from pysqlscribe.renderers.base import Renderer
 
 class Dialect(ABC):
     __escape_identifiers_enabled: bool = True
-    _renderer: Renderer
+
+    def __init__(self):
+        self._renderer = self.make_renderer()
+
+    @abstractmethod
+    def make_renderer(self) -> Renderer: ...
 
     def validate(self, current_node: Node, next_node: Node):
         valid_next = self.valid_node_transitions.get(type(current_node), ())

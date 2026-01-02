@@ -1,12 +1,13 @@
 from pysqlscribe.ast.nodes import OffsetNode, LimitNode, OrderByNode
 from pysqlscribe.dialects.base import Dialect, DialectRegistry
+from pysqlscribe.renderers.base import Renderer
 from pysqlscribe.renderers.oracle import OracleRenderer
 
 
 @DialectRegistry.register("oracle")
 class OracleDialect(Dialect):
-    def __init__(self):
-        self._renderer = OracleRenderer()
+    def make_renderer(self) -> Renderer:
+        return OracleRenderer()
 
     @property
     def valid_node_transitions(self):
