@@ -179,7 +179,7 @@ def test_escape_identifier_switch_preferences():
     )
     assert (
         query
-        == "SELECT test_column, another_test_column FROM `test_table` WHERE test_column = 1 AND another_test_column > 2"
+        == "SELECT `test_column`, `another_test_column` FROM `test_table` WHERE test_column = 1 AND another_test_column > 2"
     )
 
 

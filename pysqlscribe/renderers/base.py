@@ -18,6 +18,8 @@ from pysqlscribe.ast.nodes import (
     InsertNode,
     ReturningNode,
 )
+from pysqlscribe.protocols import DialectProtocol
+from pysqlscribe.regex_patterns import WILDCARD_REGEX
 
 SELECT = "SELECT"
 FROM = "FROM"
@@ -42,6 +44,9 @@ RETURNING = "RETURNING"
 
 
 class Renderer:
+    def __init__(self, dialect: DialectProtocol):
+        self.dialect = dialect
+
     @property
     def dispatch(self) -> Dict[type[Node], Callable[[Node], str]]:
         return {
@@ -72,25 +77,30 @@ class Renderer:
         return query.strip()
 
     def render_select(self, node: SelectNode) -> str:
-        return f"{SELECT} {node.state['columns']}"
+        columns = self._resolve_columns(*node.state["columns"])
+        return f"{SELECT} {columns}"
 
     def render_from(self, node: FromNode) -> str:
-        return f"{FROM} {node.state['tables']}"
+        tables = self.dialect.normalize_identifiers_args(node.state["tables"])
+        return f"{FROM} {tables}"
 
     def render_where(self, node: WhereNode) -> str:
         return f"{WHERE} {node.state['conditions']}"
 
     def render_group_by(self, node: GroupByNode) -> str:
-        return f"{GROUP_BY} {node.state['columns']}"
+        columns = self.dialect.normalize_identifiers_args(node.state["columns"])
+        return f"{GROUP_BY} {columns}"
 
     def render_order_by(self, node: OrderByNode) -> str:
-        return f"{ORDER_BY} {node.state['columns']}"
+        columns = self.dialect.normalize_identifiers_args(node.state["columns"])
+        return f"{ORDER_BY} {columns}"
 
     def render_limit(self, node: LimitNode) -> str:
         return f"{LIMIT} {node.state['limit']}"
 
     def render_join(self, node: JoinNode) -> str:
-        return f"{node.join_type} {JOIN} {node.table} " + (
+        table = self.dialect.normalize_identifiers_args(node.table)
+        return f"{node.join_type} {JOIN} {table} " + (
             f"ON {node.condition}"
             if node.join_type not in (JoinType.NATURAL, JoinType.CROSS)
             else ""
@@ -115,14 +125,26 @@ class Renderer:
         return f"{operation} {node.query}"
 
     def render_insert(self, node: InsertNode) -> str:
+        columns = self.dialect.normalize_identifiers_args(node.state["columns"])
+        table = self.dialect.normalize_identifiers_args(node.state["table"])
         if isinstance(node.state["values"], str):
             values = f"({node.state['values']})"
         elif isinstance(node.state["values"], list):
             values = ",".join([f"({v})" for v in node.state["values"]])
         else:
             raise ValueError(f"Invalid values: {node.state['values']}")
-        columns = f" ({node.state['columns']})" if node.state["columns"] else ""
-        return f"{INSERT} {INTO} {node.state['table']}{columns} {VALUES} {values}"
+        columns = f" ({columns})" if columns else ""
+        return f"{INSERT} {INTO} {table}{columns} {VALUES} {values}"
 
     def render_returning(self, node: ReturningNode) -> str:
-        return f"{RETURNING} {node.state['columns']}"
+        columns = self._resolve_columns(*node.state["columns"])
+        return f"{RETURNING} {columns}"
+
+    def _resolve_columns(self, *args) -> str:
+        if not args:
+            args = ["*"]
+        if WILDCARD_REGEX.match(args[0]):
+            columns = args[0]
+        else:
+            columns = self.dialect.normalize_identifiers_args(args)
+        return columns

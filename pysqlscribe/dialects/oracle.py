@@ -7,7 +7,7 @@ from pysqlscribe.renderers.oracle import OracleRenderer
 @DialectRegistry.register("oracle")
 class OracleDialect(Dialect):
     def make_renderer(self) -> Renderer:
-        return OracleRenderer()
+        return OracleRenderer(self)
 
     @property
     def valid_node_transitions(self):

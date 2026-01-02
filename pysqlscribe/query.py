@@ -25,9 +25,6 @@ from pysqlscribe.dialects import (
     Dialect,
 )
 from pysqlscribe.dialects.base import DialectRegistry
-from pysqlscribe.regex_patterns import (
-    WILDCARD_REGEX,
-)
 
 
 class Query(ABC):
@@ -42,14 +39,13 @@ class Query(ABC):
         return self._dialect
 
     def select(self, *args) -> Self:
-        columns = self._resolve_columns(*args)
         if not self.node:
-            self.node = SelectNode({"columns": columns})
+            self.node = SelectNode({"columns": list(args)})
         return self
 
     def from_(self, *args) -> Self:
         self.node.add(
-            FromNode({"tables": self.dialect.normalize_identifiers_args(args)}),
+            FromNode({"tables": list(args)}),
             self.dialect,
         )
         self.node = self.node.next_
@@ -61,8 +57,6 @@ class Query(ABC):
         if table is None or values is None:
             raise ValueError("Insert queries require `into` and `values` keywords.")
         values = self._resolve_insert_values(columns, values)
-        columns = self.dialect.normalize_identifiers_args(columns)
-        table = self.dialect.normalize_identifiers_args(table)
         if not self.node:
             self.node = InsertNode(
                 {"columns": columns, "table": table, "values": values}
@@ -70,8 +64,7 @@ class Query(ABC):
         return self
 
     def returning(self, *args) -> Self:
-        columns = self._resolve_columns(*args)
-        self.node.add(ReturningNode({"columns": columns}), self.dialect)
+        self.node.add(ReturningNode({"columns": list(args)}), self.dialect)
         self.node = self.node.next_
         return self
 
@@ -85,15 +78,6 @@ class Query(ABC):
         values = [f"{','.join(map(str, value))}" for value in values]
         return values
 
-    def _resolve_columns(self, *args) -> str:
-        if not args:
-            args = ["*"]
-        if WILDCARD_REGEX.match(args[0]):
-            columns = args[0]
-        else:
-            columns = self.dialect.normalize_identifiers_args(args)
-        return columns
-
     def join(
         self, table: str, join_type: str = JoinType.INNER, condition: str | None = None
     ) -> Self:
@@ -101,7 +85,7 @@ class Query(ABC):
             JoinNode(
                 {
                     "join_type": join_type.upper(),
-                    "table": self.dialect.normalize_identifiers_args(table),
+                    "table": table,
                     "condition": condition,
                 }
             ),
@@ -138,7 +122,7 @@ class Query(ABC):
 
     def order_by(self, *args) -> Self:
         self.node.add(
-            OrderByNode({"columns": self.dialect.normalize_identifiers_args(args)}),
+            OrderByNode({"columns": list(args)}),
             self.dialect,
         )
         self.node = self.node.next_
@@ -156,7 +140,7 @@ class Query(ABC):
 
     def group_by(self, *args) -> Self:
         self.node.add(
-            GroupByNode({"columns": self.dialect.normalize_identifiers_args(args)}),
+            GroupByNode({"columns": list(args)}),
             self.dialect,
         )
         self.node = self.node.next_
