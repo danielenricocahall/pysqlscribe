@@ -1,11 +1,9 @@
 import os
 from typing import List
 
+from pysqlscribe.exceptions import InvalidSchemaNameException
 from pysqlscribe.regex_patterns import VALID_IDENTIFIER_REGEX
 from pysqlscribe.table import Table
-
-
-class InvalidSchemaNameException(Exception): ...
 
 
 class Schema:

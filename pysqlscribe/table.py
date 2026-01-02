@@ -3,16 +3,11 @@ from typing import List, Self
 
 from pysqlscribe.alias import AliasMixin
 from pysqlscribe.column import Column
+from pysqlscribe.exceptions import InvalidTableNameException
 from pysqlscribe.query import QueryRegistry, JoinType
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
 )
-
-
-class InvalidColumnsException(Exception): ...
-
-
-class InvalidTableNameException(Exception): ...
 
 
 class Table(ABC, AliasMixin):

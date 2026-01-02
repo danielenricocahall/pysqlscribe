@@ -47,5 +47,5 @@ def test_table_join_with_alias(join_type: JoinType):
     )
     assert (
         query
-        == f'SELECT "first_name","last_name","dept" FROM "employee" AS e {join_type} JOIN "payroll" AS p ON p.id = e.payroll_id WHERE p.salary > 1000'
+        == f'SELECT "first_name", "last_name", "dept" FROM "employee" AS e {join_type} JOIN "payroll" AS p ON p.id = e.payroll_id WHERE p.salary > 1000'
     )

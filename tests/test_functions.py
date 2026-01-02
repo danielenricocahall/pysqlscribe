@@ -49,7 +49,7 @@ def test_aggregate_functions(agg_function, agg_str):
     )
     assert (
         query
-        == f'SELECT "store_location",{agg_str}(salary) FROM "employee" GROUP BY "store_location"'
+        == f'SELECT "store_location", {agg_str}(salary) FROM "employee" GROUP BY "store_location"'
     )
 
 
@@ -65,7 +65,7 @@ def test_agg_function_with_non_column_object(agg_column):
     )
     assert (
         query
-        == f'SELECT "store_location",COUNT({agg_column}) FROM "employee" GROUP BY "store_location"'
+        == f'SELECT "store_location", COUNT({agg_column}) FROM "employee" GROUP BY "store_location"'
     )
 
 

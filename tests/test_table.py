@@ -26,7 +26,7 @@ def test_table_with_schema():
     query = table.select("test_column", "another_test_column").build()
     assert (
         query
-        == "SELECT `test_column`,`another_test_column` FROM `test_schema.test_table`"
+        == "SELECT `test_column`, `another_test_column` FROM `test_schema.test_table`"
     )
     assert table.table_name == "test_schema.test_table"
 
@@ -95,7 +95,7 @@ def test_table_join_with_conditions(join_type: JoinType):
     )
     assert (
         query
-        == f'SELECT "first_name","last_name","dept" FROM "employee" {join_type} JOIN "payroll" ON payroll.id = employee.payroll_id'
+        == f'SELECT "first_name", "last_name", "dept" FROM "employee" {join_type} JOIN "payroll" ON payroll.id = employee.payroll_id'
     )
 
 
@@ -114,7 +114,7 @@ def test_table_join_without_conditions(join_type: JoinType):
     )
     assert (
         query
-        == f'SELECT "first_name","last_name","dept" FROM "employee" {join_type} JOIN "payroll"'
+        == f'SELECT "first_name", "last_name", "dept" FROM "employee" {join_type} JOIN "payroll"'
     )
 
 
@@ -160,7 +160,7 @@ def test_operations_columns_and_numerics():
 def test_insert():
     table = MySQLTable("employees", "salary", "bonus")
     query = table.insert(table.salary, table.bonus, values=(100, 200)).build()
-    assert query == "INSERT INTO `employees` (`salary`,`bonus`) VALUES (100,200)"
+    assert query == "INSERT INTO `employees` (`salary`, `bonus`) VALUES (100,200)"
 
 
 def test_subquery_columns():
@@ -184,7 +184,7 @@ def test_groupby_having():
     )
     assert (
         query
-        == "SELECT `department_id`,AVG(salary) AS avg_salary FROM `employees` GROUP BY `department_id` HAVING AVG(salary) > 10000"
+        == "SELECT `department_id`, AVG(salary) AS avg_salary FROM `employees` GROUP BY `department_id` HAVING AVG(salary) > 10000"
     )
 
 
@@ -194,5 +194,5 @@ def test_rename_table():
     query = table.select("column1", "column2").where(table.column1 > 1).build()
     assert (
         query
-        == "SELECT `column1`,`column2` FROM `new_table_name` WHERE new_table_name.column1 > 1"
+        == "SELECT `column1`, `column2` FROM `new_table_name` WHERE new_table_name.column1 > 1"
     )
