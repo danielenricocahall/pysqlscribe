@@ -136,9 +136,9 @@ class DialectRegistry:
 
     @classmethod
     def register(cls, key: str):
-        def decorator(builder_class: Callable[[], Dialect]) -> Callable[[], Dialect]:
-            cls.dialects[key] = builder_class
-            return builder_class
+        def decorator(dialect_class: Callable[[], Dialect]) -> Callable[[], Dialect]:
+            cls.dialects[key] = dialect_class
+            return dialect_class
 
         return decorator
 
