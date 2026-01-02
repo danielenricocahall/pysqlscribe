@@ -83,7 +83,7 @@ class Dialect(ABC):
     @abstractmethod
     def _escape_identifier(self, identifier: str): ...
 
-    def normalize_identifiers_arg(self, *args) -> str:
+    def normalize_identifiers_args(self, *args) -> str:
         arg = args[0]
         if isinstance(arg, str):
             arg = [arg]
