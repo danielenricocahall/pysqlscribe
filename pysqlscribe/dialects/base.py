@@ -13,7 +13,6 @@ from pysqlscribe.ast.nodes import (
     IntersectNode,
     HavingNode,
     OffsetNode,
-    FetchNextNode,
     SelectNode,
     InsertNode,
     ReturningNode,
@@ -55,21 +54,3 @@ class Dialect(ABC):
             IntersectNode: (),
             InsertNode: (ReturningNode,),
         }
-
-
-class PostgreSQLDialect(Dialect): ...
-
-
-class MySQLDialect(Dialect): ...
-
-
-class OracleDialect(Dialect):
-    @property
-    def valid_node_transitions(self):
-        transitions = dict(super().valid_node_transitions)
-        transitions[OffsetNode] = (FetchNextNode,)
-        transitions[FetchNextNode] = tuple()
-        return transitions
-
-
-class SQLiteDialect(Dialect): ...
