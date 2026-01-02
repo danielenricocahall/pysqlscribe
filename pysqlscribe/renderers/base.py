@@ -25,7 +25,6 @@ WHERE = "WHERE"
 LIMIT = "LIMIT"
 JOIN = "JOIN"
 ORDER_BY = "ORDER BY"
-AND = "AND"
 OFFSET = "OFFSET"
 GROUP_BY = "GROUP BY"
 HAVING = "HAVING"
@@ -104,13 +103,16 @@ class Renderer:
         return f"{OFFSET} {node.state['offset']}"
 
     def render_union(self, node: UnionNode) -> str:
-        return f"{node.operation} {node.query}"
+        operation = UNION_ALL if node.state.get("all", False) else UNION
+        return f"{operation} {node.query}"
 
     def render_except(self, node: ExceptNode) -> str:
-        return f"{node.operation} {node.query}"
+        operation = EXCEPT_ALL if node.state.get("all", False) else EXCEPT
+        return f"{operation} {node.query}"
 
     def render_intersect(self, node: IntersectNode) -> str:
-        return f"{node.operation} {node.query}"
+        operation = INTERSECT_ALL if node.state.get("all", False) else INTERSECT
+        return f"{operation} {node.query}"
 
     def render_insert(self, node: InsertNode) -> str:
         if isinstance(node.state["values"], str):
