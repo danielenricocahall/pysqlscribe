@@ -29,10 +29,12 @@ from pysqlscribe.regex_patterns import (
     EXPRESSION_IDENTIFIER_REGEX,
     ALIAS_REGEX,
 )
+from pysqlscribe.renderers.base import Renderer
 
 
 class Dialect(ABC):
     __escape_identifiers_enabled: bool = True
+    _renderer: Renderer
 
     def validate(self, current_node: Node, next_node: Node):
         valid_next = self.valid_node_transitions.get(type(current_node), ())
@@ -122,13 +124,7 @@ class Dialect(ABC):
         self.__escape_identifiers_enabled = value
 
     def render(self, node: Node) -> str:
-        query = ""
-        while True:
-            query = str(node) + " " + query
-            node = node.prev_
-            if node is None:
-                break
-        return query.strip()
+        return self._renderer.render(node)
 
 
 class DialectRegistry:

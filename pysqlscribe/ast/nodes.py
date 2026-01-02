@@ -32,9 +32,7 @@ class SelectNode(Node):
         return f"{SELECT} {self.state['columns']}"
 
 
-class FromNode(Node):
-    def __str__(self):
-        return f"{FROM} {self.state['tables']}"
+class FromNode(Node): ...
 
 
 class JoinNode(Node):
@@ -51,18 +49,8 @@ class JoinNode(Node):
             )
         self.condition = condition
 
-    def __str__(self):
-        return f"{self.join_type} {JOIN} {self.table} " + (
-            f"ON {self.condition}"
-            if self.join_type not in (JoinType.NATURAL, JoinType.CROSS)
-            else ""
-        )
-
 
 class WhereNode(Node):
-    def __str__(self):
-        return f"{WHERE} {self.state['conditions']}"
-
     def __and__(self, other):
         if isinstance(other, WhereNode):
             compound_condition = (
@@ -71,43 +59,19 @@ class WhereNode(Node):
             return WhereNode({"conditions": compound_condition})
 
 
-class OrderByNode(Node):
-    def __str__(self):
-        return f"{ORDER_BY} {self.state['columns']}"
+class OrderByNode(Node): ...
 
 
-class LimitNode(Node):
-    def __str__(self):
-        return f"{LIMIT} {self.state['limit']}"
+class LimitNode(Node): ...
 
 
-class FetchNextNode(LimitNode):
-    def __str__(self):
-        return f"{FETCH_NEXT} {self.state['limit']} ROWS ONLY"
+class OffsetNode(Node): ...
 
 
-class OffsetNode(Node):
-    @property
-    def valid_next_nodes(self):
-        return ()
-
-    def __str__(self):
-        return f"{OFFSET} {self.state['offset']}"
-
-
-class GroupByNode(Node):
-    @property
-    def valid_next_nodes(self):
-        return HavingNode, OrderByNode, LimitNode
-
-    def __str__(self):
-        return f"{GROUP_BY} {self.state['columns']}"
+class GroupByNode(Node): ...
 
 
 class HavingNode(Node):
-    def __str__(self):
-        return f"{HAVING} {self.state['conditions']}"
-
     def __and__(self, other):
         if isinstance(other, HavingNode):
             compound_condition = (
@@ -129,9 +93,6 @@ class CombineNode(Node, ABC):
     @property
     def valid_next_nodes(self):
         return ()
-
-    def __str__(self):
-        return f"{self.operation} {self.query}"
 
 
 class UnionNode(CombineNode):

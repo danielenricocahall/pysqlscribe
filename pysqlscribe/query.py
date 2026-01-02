@@ -20,7 +20,6 @@ from pysqlscribe.ast.nodes import (
     ReturningNode,
     UnionNode,
     LimitNode,
-    FetchNextNode,
 )
 from pysqlscribe.dialects import (
     Dialect,
@@ -228,11 +227,6 @@ class MySQLQuery(Query):
 @QueryRegistry.register("oracle")
 class OracleQuery(Query):
     _dialect_key = "oracle"
-
-    def limit(self, n: int | str):
-        self.node.add(FetchNextNode({"limit": int(n)}), self.dialect)
-        self.node = self.node = self.node.next_
-        return self
 
 
 @QueryRegistry.register("postgres")
