@@ -38,7 +38,7 @@ class Dialect(ABC):
 
     def validate(self, current_node: Node, next_node: Node):
         valid_next = self.valid_node_transitions.get(type(current_node), ())
-        if not isinstance(next_node, valid_next):
+        if type(next_node) not in valid_next:
             raise DialectValidationError(
                 f"{type(next_node).__name__} cannot follow {type(current_node).__name__}"
             )
