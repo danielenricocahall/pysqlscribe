@@ -1,6 +1,6 @@
 import os
 from abc import ABC, abstractmethod
-from typing import Callable, Dict
+from typing import Dict
 
 from pysqlscribe.ast.base import Node
 from pysqlscribe.ast.nodes import (
@@ -133,11 +133,11 @@ class Dialect(ABC):
 
 
 class DialectRegistry:
-    dialects: Dict[str, Callable[[], Dialect]] = {}
+    dialects: Dict[str, type[Dialect]] = {}
 
     @classmethod
     def register(cls, key: str):
-        def decorator(dialect_class: Callable[[], Dialect]) -> Callable[[], Dialect]:
+        def decorator(dialect_class: type[Dialect]) -> type[Dialect]:
             cls.dialects[key] = dialect_class
             return dialect_class
 

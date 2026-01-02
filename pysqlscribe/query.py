@@ -1,7 +1,7 @@
 import operator
 from abc import ABC
 from functools import reduce
-from typing import Dict, Self, Callable
+from typing import Dict, Self
 
 from pysqlscribe.ast.base import Node
 from pysqlscribe.ast.joins import JoinType
@@ -177,11 +177,11 @@ class Query(ABC):
 
 
 class QueryRegistry:
-    builders: Dict[str, Callable[[], Query]] = {}
+    builders: Dict[str, type[Query]] = {}
 
     @classmethod
     def register(cls, key: str):
-        def decorator(builder_class: Callable[[], Query]) -> Callable[[], Query]:
+        def decorator(builder_class: type[Query]) -> type[Query]:
             cls.builders[key] = builder_class
             return builder_class
 
