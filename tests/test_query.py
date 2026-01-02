@@ -18,7 +18,9 @@ from pysqlscribe.ast.nodes import UNION, EXCEPT, INTERSECT
 def test_select_query(fields):
     query_builder = QueryRegistry.get_builder("mysql")
     query = query_builder.select(*fields).from_("test_table").build()
-    fields = [query_builder.escape_identifier(identifier) for identifier in fields]
+    fields = [
+        query_builder.dialect.escape_identifier(identifier) for identifier in fields
+    ]
     assert query == f"SELECT {','.join(fields)} FROM `test_table`"
 
 
@@ -37,7 +39,7 @@ def test_select_query_with_limit(dialect, syntax):
     query = query_builder.select("test_column").from_("test_table").limit(10).build()
     assert (
         query
-        == f"SELECT {query_builder.escape_identifier('test_column')} FROM {query_builder.escape_identifier('test_table')} {syntax.format(limit=10)}"
+        == f"SELECT {query_builder.dialect.escape_identifier('test_column')} FROM {query_builder.dialect.escape_identifier('test_table')} {syntax.format(limit=10)}"
     )
 
 
@@ -52,7 +54,7 @@ def test_select_query_with_limit_and_offset():
     )
     assert (
         query
-        == f"SELECT {query_builder.escape_identifier('test_column')} FROM {query_builder.escape_identifier('test_table')} LIMIT 10 OFFSET 5"
+        == f"SELECT {query_builder.dialect.escape_identifier('test_column')} FROM {query_builder.dialect.escape_identifier('test_table')} LIMIT 10 OFFSET 5"
     )
 
 
@@ -301,7 +303,7 @@ def test_insert_with_returning(return_value):
         .build()
     )
     if return_value != "*":
-        return_value = query_builder.escape_identifier(return_value)
+        return_value = query_builder.dialect.escape_identifier(return_value)
     assert (
         query
         == f'INSERT INTO "employees" ("id","employee_name") VALUES (1,\'john doe\') RETURNING {return_value}'
