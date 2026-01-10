@@ -41,6 +41,7 @@ INSERT = "INSERT"
 INTO = "INTO"
 VALUES = "VALUES"
 RETURNING = "RETURNING"
+AND = "AND"
 
 
 class Renderer:
@@ -85,7 +86,8 @@ class Renderer:
         return f"{FROM} {tables}"
 
     def render_where(self, node: WhereNode) -> str:
-        return f"{WHERE} {node.state['conditions']}"
+        conditions = f"{f' {AND} '.join(map(str, node.state['conditions']))}"
+        return f"{WHERE} {conditions}"
 
     def render_group_by(self, node: GroupByNode) -> str:
         columns = self.dialect.normalize_identifiers_args(node.state["columns"])
@@ -107,7 +109,8 @@ class Renderer:
         )
 
     def render_having(self, node: HavingNode) -> str:
-        return f"{HAVING} {node.state['conditions']}"
+        conditions = f"{f' {AND} '.join(map(str, node.state['conditions']))}"
+        return f"{HAVING} {conditions}"
 
     def render_offset(self, node: OffsetNode) -> str:
         return f"{OFFSET} {node.state['offset']}"

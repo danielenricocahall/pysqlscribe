@@ -28,13 +28,7 @@ class JoinNode(Node):
         self.condition = condition
 
 
-class WhereNode(Node):
-    def __and__(self, other):
-        if isinstance(other, WhereNode):
-            compound_condition = (
-                f"{self.state['conditions']} {AND} {other.state['conditions']}"
-            )
-            return WhereNode({"conditions": compound_condition})
+class WhereNode(Node): ...
 
 
 class OrderByNode(Node): ...
@@ -49,13 +43,7 @@ class OffsetNode(Node): ...
 class GroupByNode(Node): ...
 
 
-class HavingNode(Node):
-    def __and__(self, other):
-        if isinstance(other, HavingNode):
-            compound_condition = (
-                f"{self.state['conditions']} {AND} {other.state['conditions']}"
-            )
-            return HavingNode({"conditions": compound_condition})
+class HavingNode(Node): ...
 
 
 class CombineNode(Node, ABC):

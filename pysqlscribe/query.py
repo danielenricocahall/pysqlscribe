@@ -1,6 +1,4 @@
-import operator
 from abc import ABC
-from functools import reduce
 from typing import Dict, Self
 
 from pysqlscribe.ast.base import Node
@@ -102,9 +100,7 @@ class Query(ABC):
         return self.join(table, JoinType.NATURAL)
 
     def where(self, *args) -> Self:
-        where_node = reduce(
-            operator.and_, map(lambda arg: WhereNode({"conditions": arg}), args)
-        )
+        where_node = WhereNode({"conditions": list(args)})
         self.node.add(where_node, self.dialect)
         self.node = self.node.next_
         return self
@@ -136,9 +132,7 @@ class Query(ABC):
         return self
 
     def having(self, *args) -> Self:
-        having_node = reduce(
-            operator.and_, map(lambda arg: HavingNode({"conditions": arg}), args)
-        )
+        having_node = HavingNode({"conditions": list(args)})
         self.node.add(having_node, self.dialect)
         self.node = self.node.next_
         return self
