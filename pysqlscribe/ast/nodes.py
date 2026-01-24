@@ -4,8 +4,6 @@ from pysqlscribe.ast.base import Node
 from pysqlscribe.ast.joins import JoinType
 from pysqlscribe.exceptions import InvalidJoinException
 
-AND = "AND"
-
 
 class SelectNode(Node): ...
 
