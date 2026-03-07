@@ -54,6 +54,14 @@ CREATE TABLE cool_company.employees (
 );
 """
 
+SQL_IF_NOT_EXISTS = """
+CREATE TABLE IF NOT EXISTS sessions (
+    session_id INT,
+    user_id INT,
+    token VARCHAR(255)
+);
+"""
+
 
 @pytest.fixture
 def temp_sql_file():
@@ -164,6 +172,15 @@ def test_composite_primary_key_skipped_correctly(temp_sql_with_composite_key):
     assert set(memberships.columns) == {"member_id", "group_id", "role"}
 
 
+@pytest.fixture
+def temp_sql_if_not_exists():
+    with tempfile.NamedTemporaryFile("w+", suffix=".sql", delete=False) as f:
+        f.write(SQL_IF_NOT_EXISTS)
+        f.flush()
+        yield f.name
+    os.remove(f.name)
+
+
 def test_load_with_schema(temp_sql_with_schema):
     """
     Test loading a table with a schema in the name.
@@ -179,3 +196,14 @@ def test_load_with_schema(temp_sql_with_schema):
     assert hasattr(employees, "employee_id")
     assert hasattr(employees, "salary")
     assert hasattr(employees, "role")
+
+
+def test_load_create_table_if_not_exists(temp_sql_if_not_exists):
+    tables = load_tables_from_ddls(temp_sql_if_not_exists, dialect="sqlite")
+
+    assert "sessions" in tables
+    sessions = tables["sessions"]
+
+    assert set(sessions.columns) == {"session_id", "user_id", "token"}
+    for col in sessions.columns:
+        assert hasattr(sessions, col)
