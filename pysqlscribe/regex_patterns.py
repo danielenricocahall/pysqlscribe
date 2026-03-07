@@ -48,4 +48,6 @@ ALIAS_SPLIT_REGEX = re.compile(r"\s+AS\s+", re.IGNORECASE)
 
 WILDCARD_REGEX = re.compile(r"^\*$")
 
-CREATE_TABLE_REGEX = r"CREATE\s+TABLE\s+((\w+)\.)?(\w+)\s*\((.*?)\);"
+CREATE_TABLE_REGEX = (
+    r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?((\w+)\.)?(\w+)\s*\((.*?)\);"
+)
