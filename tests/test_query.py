@@ -30,7 +30,11 @@ def test_select_query_no_columns():
 
 @pytest.mark.parametrize(
     "dialect,syntax",
-    [("mysql", "LIMIT {limit}"), ("oracle", "FETCH NEXT {limit} ROWS ONLY")],
+    [
+        ("mysql", "LIMIT {limit}"),
+        ("oracle", "FETCH NEXT {limit} ROWS ONLY"),
+        ("sqlserver", "FETCH NEXT {limit} ROWS ONLY"),
+    ],
 )
 def test_select_query_with_limit(dialect, syntax):
     query_builder = Query(dialect)

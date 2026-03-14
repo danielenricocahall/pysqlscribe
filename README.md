@@ -511,6 +511,7 @@ This is anticipated to grow, also there are certainly operations that are missin
 - [X] `Oracle`
 - [X] `Postgres`
 - [X] `Sqlite`
+- [X] `SQL Server`
 
 
 # TODO
