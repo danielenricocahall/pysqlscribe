@@ -13,11 +13,13 @@ class InvalidPathException(Exception):
 def create_tables_from_parsed(
     parsed: dict[str, dict[str, list[str] | str]], dialect: str
 ) -> dict[str, Table]:
-    TableClass = Table.create(dialect)
     tables = {}
     for table_name, table_metadata in parsed.items():
-        tables[table_name] = TableClass(
-            table_name, *table_metadata["columns"], schema=table_metadata.get("schema")
+        tables[table_name] = Table(
+            table_name,
+            *table_metadata["columns"],
+            dialect=dialect,
+            schema=table_metadata.get("schema"),
         )
     return tables
 

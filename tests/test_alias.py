@@ -1,12 +1,12 @@
 import pytest
 
-from pysqlscribe.query import JoinType
-from pysqlscribe.table import PostgresTable
+from pysqlscribe.ast.joins import JoinType
+from pysqlscribe.table import Table
 
 
 def test_alias():
-    employee_table = PostgresTable(
-        "employee", "first_name", "last_name", "dept", "payroll_id"
+    employee_table = Table(
+        "employee", "first_name", "last_name", "dept", "payroll_id", dialect="postgres"
     )
     query = (
         employee_table.as_("e").select(employee_table.first_name.as_("name")).build()
@@ -15,8 +15,8 @@ def test_alias():
 
 
 def test_invalid_alias():
-    employee_table = PostgresTable(
-        "employee", "first_name", "last_name", "dept", "payroll_id"
+    employee_table = Table(
+        "employee", "first_name", "last_name", "dept", "payroll_id", dialect="postgres"
     )
     with pytest.raises(ValueError):
         employee_table.as_("$something$not$allowed").select(
@@ -28,10 +28,10 @@ def test_invalid_alias():
     "join_type", [JoinType.INNER, JoinType.OUTER, JoinType.LEFT, JoinType.RIGHT]
 )
 def test_table_join_with_alias(join_type: JoinType):
-    employee_table = PostgresTable(
-        "employee", "first_name", "last_name", "dept", "payroll_id"
+    employee_table = Table(
+        "employee", "first_name", "last_name", "dept", "payroll_id", dialect="postgres"
     )
-    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    payroll_table = Table("payroll", "id", "salary", "category", dialect="postgres")
     query = (
         employee_table.as_("e")
         .select(

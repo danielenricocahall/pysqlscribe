@@ -27,7 +27,7 @@ from pysqlscribe.scalar_functions import (
     acos,
     asin,
 )
-from pysqlscribe.table import PostgresTable
+from pysqlscribe.table import Table
 
 
 @pytest.mark.parametrize(
@@ -39,8 +39,13 @@ from pysqlscribe.table import PostgresTable
     ],
 )
 def test_aggregate_functions(agg_function, agg_str):
-    table = PostgresTable(
-        "employee", "first_name", "last_name", "store_location", "salary"
+    table = Table(
+        "employee",
+        "first_name",
+        "last_name",
+        "store_location",
+        "salary",
+        dialect="postgres",
     )
     query = (
         table.select(table.store_location, agg_function(table.salary))
@@ -55,8 +60,13 @@ def test_aggregate_functions(agg_function, agg_str):
 
 @pytest.mark.parametrize("agg_column", [1, "first_name"])
 def test_agg_function_with_non_column_object(agg_column):
-    table = PostgresTable(
-        "employee", "first_name", "last_name", "store_location", "salary"
+    table = Table(
+        "employee",
+        "first_name",
+        "last_name",
+        "store_location",
+        "salary",
+        dialect="postgres",
     )
     query = (
         table.select(table.store_location, count(agg_column))
@@ -93,13 +103,13 @@ def test_agg_function_with_non_column_object(agg_column):
     ],
 )
 def test_scalar_functions(scalar_function, str_function):
-    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    payroll_table = Table("payroll", "id", "salary", "category", dialect="postgres")
     query = payroll_table.select(scalar_function(payroll_table.salary)).build()
     assert query == f'SELECT {str_function}(salary) FROM "payroll"'
 
 
 def test_concat():
-    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    payroll_table = Table("payroll", "id", "salary", "category", dialect="postgres")
     query = payroll_table.select(concat(payroll_table.salary, "USD")).build()
     assert query == "SELECT CONCAT(salary, 'USD') FROM \"payroll\""
 
@@ -111,8 +121,8 @@ def test_concat():
 
 
 def test_concat_with_columns():
-    payroll_table = PostgresTable(
-        "payroll", "first_name", "last_name", "salary", "category"
+    payroll_table = Table(
+        "payroll", "first_name", "last_name", "salary", "category", dialect="postgres"
     )
     query = payroll_table.select(
         concat(payroll_table.first_name, payroll_table.last_name).as_("full_name")
@@ -121,7 +131,7 @@ def test_concat_with_columns():
 
 
 def test_power_with_column():
-    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    payroll_table = Table("payroll", "id", "salary", "category", dialect="postgres")
     query = payroll_table.select(power(payroll_table.salary, 2)).build()
     assert query == 'SELECT POWER(salary, 2) FROM "payroll"'
     query = payroll_table.select(power(2, payroll_table.salary)).build()
@@ -130,7 +140,7 @@ def test_power_with_column():
 
 @pytest.mark.parametrize("base,exponent", [(2, 3), ("2", 3), (2, "3")])
 def test_power_with_non_column(base, exponent):
-    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    payroll_table = Table("payroll", "id", "salary", "category", dialect="postgres")
     query = payroll_table.select(power(base, exponent)).build()
     assert query == f'SELECT POWER({base}, {exponent}) FROM "payroll"'
 
@@ -140,7 +150,7 @@ def test_power_with_non_column(base, exponent):
     [(ScalarFunctions.ROUND, round_), (ScalarFunctions.TRUNC, trunc)],
 )
 def test_rounding_functions(rounding_function_name, rounding_function):
-    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    payroll_table = Table("payroll", "id", "salary", "category", dialect="postgres")
     query = payroll_table.select(rounding_function(payroll_table.salary)).build()
     assert query == f'SELECT {rounding_function_name}(salary) FROM "payroll"'
 
@@ -152,7 +162,7 @@ def test_rounding_functions(rounding_function_name, rounding_function):
 
 
 def test_nullif():
-    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    payroll_table = Table("payroll", "id", "salary", "category", dialect="postgres")
     query = payroll_table.select(nullif(payroll_table.salary, 0)).build()
     assert query == 'SELECT NULLIF(salary, 0) FROM "payroll"'
 
@@ -164,7 +174,7 @@ def test_nullif():
 
 
 def test_atan2():
-    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    payroll_table = Table("payroll", "id", "salary", "category", dialect="postgres")
     query = payroll_table.select(atan2(payroll_table.salary, 100)).build()
     assert query == 'SELECT ATAN2(salary, 100) FROM "payroll"'
 
