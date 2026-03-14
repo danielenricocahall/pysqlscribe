@@ -1,94 +1,61 @@
-from abc import ABC
+from __future__ import annotations
+
 from typing import List, Self
 
 from pysqlscribe.alias import AliasMixin
 from pysqlscribe.column import Column
 from pysqlscribe.exceptions import InvalidTableNameException
-from pysqlscribe.query import QueryRegistry, JoinType
+from pysqlscribe.ast.joins import JoinType
+from pysqlscribe.query import Query
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
 )
 
 
-class Table(ABC, AliasMixin):
-    __cache: dict[str, type["Table"]] = {}
-
-    def __init__(self, name: str, *columns, schema: str | None = None):
+class Table(Query, AliasMixin):
+    def __init__(self, name: str, *columns, dialect: str, schema: str | None = None):
+        Query.__init__(self, dialect)
         self.table_name = name
         self.schema = schema
         self.columns = columns
 
-    @classmethod
-    def create(cls, dialect: str):
-        if dialect not in QueryRegistry.builders:
-            raise ValueError(f"Unsupported dialect: {dialect}")
+    def select(self, *columns) -> Self:
+        columns = [
+            f"{column.name}{column.alias}" if isinstance(column, Column) else column
+            for column in columns
+        ]
+        table_name = f"{self.table_name}{self.alias}"
+        return super().select(*columns).from_(table_name)
 
-        class_name = f"{dialect.capitalize()}Table"
+    def order_by(self, *columns) -> Self:
+        columns = [
+            column.name if isinstance(column, Column) else column for column in columns
+        ]
+        return super().order_by(*columns)
 
-        if class_name in cls.__cache:
-            return cls.__cache[class_name]
+    def group_by(self, *columns) -> Self:
+        columns = [
+            column.name if isinstance(column, Column) else column for column in columns
+        ]
+        return super().group_by(*columns)
 
-        query_class = QueryRegistry.get_builder(dialect).__class__
+    def join(
+        self,
+        table: str | "Table",
+        join_type: str = JoinType.INNER,
+        condition: str | None = None,
+    ) -> Self:
+        if isinstance(table, Table):
+            table = f"{table.table_name}{table.alias}"
+        return super().join(table, join_type, condition)
 
-        class DynamicTable(query_class, Table):
-            def __init__(self, name: str, *fields, schema: str | None = None):
-                query_class.__init__(self)
-                Table.__init__(self, name, *fields, schema=schema)
-
-            def select(self, *columns):
-                columns = [
-                    f"{column.name}{column.alias}"
-                    if isinstance(column, Column)
-                    else column
-                    for column in columns
-                ]
-                table_name = f"{self.table_name}{self.alias}"
-                return super().select(*columns).from_(table_name)
-
-            def order_by(self, *columns):
-                columns = [
-                    column.name if isinstance(column, Column) else column
-                    for column in columns
-                ]
-                return super().order_by(*columns)
-
-            def group_by(self, *columns):
-                columns = [
-                    column.name if isinstance(column, Column) else column
-                    for column in columns
-                ]
-                return super().group_by(*columns)
-
-            def join(
-                self,
-                table: str | Table,
-                join_type: str = JoinType.INNER,
-                condition: str | None = None,
-            ) -> Self:
-                if isinstance(table, Table):
-                    table = f"{table.table_name}{table.alias}"
-                return super().join(table, join_type, condition)
-
-            def insert(self, *columns, **kwargs) -> Self:
-                """
-                Override the insert method to ensure it uses the correct table name.
-                """
-                columns = [
-                    column.name if isinstance(column, Column) else column
-                    for column in columns
-                ]
-                return super().insert(
-                    *columns, into=self.table_name, values=kwargs.get("values")
-                )
-
-            def __repr__(self):
-                return f"{self.__class__.__name__}(name={self.table_name}, columns={self.columns})"
-
-        # Set a meaningful class name
-        DynamicTable.__name__ = class_name
-        cls.__cache[class_name] = DynamicTable
-
-        return DynamicTable
+    def insert(self, *columns, **kwargs) -> Self:
+        columns = [
+            column.name if isinstance(column, Column) else column for column in columns
+        ]
+        return super().insert(
+            *columns, into=self.table_name, values=kwargs.get("values")
+        )
 
     @property
     def table_name(self):
@@ -127,8 +94,7 @@ class Table(ABC, AliasMixin):
         self.columns = self.columns
         return self
 
-
-MySQLTable = Table.create("mysql")
-OracleTable = Table.create("oracle")
-PostgresTable = Table.create("postgres")
-SqliteTable = Table.create("sqlite")
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}(name={self.table_name}, columns={self.columns})"
+        )

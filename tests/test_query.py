@@ -3,10 +3,8 @@ from itertools import product
 import pytest
 
 from pysqlscribe.exceptions import InvalidJoinException
-from pysqlscribe.query import (
-    QueryRegistry,
-    JoinType,
-)
+from pysqlscribe.ast.joins import JoinType
+from pysqlscribe.query import Query
 from pysqlscribe.renderers.base import UNION, EXCEPT, INTERSECT
 
 
@@ -16,7 +14,7 @@ from pysqlscribe.renderers.base import UNION, EXCEPT, INTERSECT
     ids=["single field", "multiple fields"],
 )
 def test_select_query(fields):
-    query_builder = QueryRegistry.get_builder("mysql")
+    query_builder = Query("mysql")
     query = query_builder.select(*fields).from_("test_table").build()
     fields = [
         query_builder.dialect.escape_identifier(identifier) for identifier in fields
@@ -25,7 +23,7 @@ def test_select_query(fields):
 
 
 def test_select_query_no_columns():
-    query_builder = QueryRegistry.get_builder("mysql")
+    query_builder = Query("mysql")
     query = query_builder.select().from_("test_table").build()
     assert query == "SELECT * FROM `test_table`"
 
@@ -35,7 +33,7 @@ def test_select_query_no_columns():
     [("mysql", "LIMIT {limit}"), ("oracle", "FETCH NEXT {limit} ROWS ONLY")],
 )
 def test_select_query_with_limit(dialect, syntax):
-    query_builder = QueryRegistry.get_builder(dialect)
+    query_builder = Query(dialect)
     query = query_builder.select("test_column").from_("test_table").limit(10).build()
     assert (
         query
@@ -44,7 +42,7 @@ def test_select_query_with_limit(dialect, syntax):
 
 
 def test_select_query_with_limit_and_offset():
-    query_builder = QueryRegistry.get_builder("postgres")
+    query_builder = Query("postgres")
     query = (
         query_builder.select("test_column")
         .from_("test_table")
@@ -59,7 +57,7 @@ def test_select_query_with_limit_and_offset():
 
 
 def test_select_query_with_order_by():
-    query_builder = QueryRegistry.get_builder("mysql")
+    query_builder = Query("mysql")
     query = (
         query_builder.select("test_column", "another_test_column")
         .from_("test_table")
@@ -73,7 +71,7 @@ def test_select_query_with_order_by():
 
 
 def test_where_clause():
-    query_builder = QueryRegistry.get_builder("mysql")
+    query_builder = Query("mysql")
     query = (
         query_builder.select("test_column", "another_test_column")
         .from_("test_table")
@@ -87,7 +85,7 @@ def test_where_clause():
 
 
 def test_group_by_having():
-    query_builder = QueryRegistry.get_builder("sqlite")
+    query_builder = Query("sqlite")
     query = (
         query_builder.select(
             "product_line", "AVG(unit_price)", "SUM(quantity)", "SUM(total)"
@@ -107,7 +105,7 @@ def test_group_by_having():
     "join_type", [JoinType.INNER, JoinType.OUTER, JoinType.LEFT, JoinType.RIGHT]
 )
 def test_joins_with_conditions(join_type: JoinType):
-    query_builder = QueryRegistry.get_builder("oracle")
+    query_builder = Query("oracle")
     query_builder.select("employee_id", "store_location").from_("employees").join(
         "payroll", join_type, "employees.payroll_id = payroll.id"
     )
@@ -120,7 +118,7 @@ def test_joins_with_conditions(join_type: JoinType):
 
 @pytest.mark.parametrize("join_type", [JoinType.NATURAL, JoinType.CROSS])
 def test_joins_no_condition(join_type: JoinType):
-    query_builder = QueryRegistry.get_builder("oracle")
+    query_builder = Query("oracle")
     query_builder.select("employee_id", "store_location").from_("employees").join(
         "payroll", join_type
     )
@@ -132,7 +130,7 @@ def test_joins_no_condition(join_type: JoinType):
 
 
 def test_invalid_join():
-    query_builder = QueryRegistry.get_builder("oracle")
+    query_builder = Query("oracle")
     with pytest.raises(InvalidJoinException):
         query_builder.select("employee_id", "store_location").from_("employees").join(
             "payroll", JoinType.NATURAL, "employees.payroll_id = payroll.id"
@@ -143,7 +141,7 @@ def test_invalid_join():
     "join_type", [JoinType.INNER, JoinType.OUTER, JoinType.LEFT, JoinType.RIGHT]
 )
 def test_join_where_with_conditions(join_type: JoinType):
-    query_builder = QueryRegistry.get_builder("oracle")
+    query_builder = Query("oracle")
     query_builder.select("employee_id", "store_location").from_("employees").join(
         "payroll", join_type, "employees.payroll_id = payroll.id"
     ).where("employee.salary > 10000")
@@ -155,7 +153,7 @@ def test_join_where_with_conditions(join_type: JoinType):
 
 
 def test_disable_escape_identifier():
-    query_builder = QueryRegistry.get_builder("mysql").disable_escape_identifiers()
+    query_builder = Query("mysql").disable_escape_identifiers()
     query = (
         query_builder.select("test_column", "another_test_column")
         .from_("test_table")
@@ -169,7 +167,7 @@ def test_disable_escape_identifier():
 
 
 def test_escape_identifier_switch_preferences():
-    query_builder = QueryRegistry.get_builder("mysql").disable_escape_identifiers()
+    query_builder = Query("mysql").disable_escape_identifiers()
     query = (
         query_builder.select("test_column", "another_test_column")
         .enable_escape_identifiers()
@@ -185,7 +183,7 @@ def test_escape_identifier_switch_preferences():
 
 def test_disable_escape_identifier_with_environment_variable(monkeypatch):
     monkeypatch.setenv("PYSQLSCRIBE_ESCAPE_IDENTIFIERS", "False")
-    query_builder = QueryRegistry.get_builder("mysql")
+    query_builder = Query("mysql")
     query = (
         query_builder.select("test_column", "another_test_column")
         .from_("test_table")
@@ -200,8 +198,8 @@ def test_disable_escape_identifier_with_environment_variable(monkeypatch):
 
 @pytest.mark.parametrize("all_", [True, False])
 def test_union(all_):
-    query_builder = QueryRegistry.get_builder("mysql")
-    another_query_builder = QueryRegistry.get_builder("mysql")
+    query_builder = Query("mysql")
+    another_query_builder = Query("mysql")
     query = (
         query_builder.select("test_column")
         .from_("test_table")
@@ -224,8 +222,8 @@ def test_union(all_):
     "all_, combine_operation", product([True, False], [UNION, EXCEPT, INTERSECT])
 )
 def test_combine_operations(all_, combine_operation):
-    query_builder = QueryRegistry.get_builder("mysql")
-    another_query_builder = QueryRegistry.get_builder("mysql")
+    query_builder = Query("mysql")
+    another_query_builder = Query("mysql")
     query = query_builder.select("test_column").from_("test_table")
     another_query = another_query_builder.select("another_test_column").from_(
         "another_test_table"
@@ -245,7 +243,7 @@ def test_combine_operations(all_, combine_operation):
 
 
 def test_insert():
-    query_builder = QueryRegistry.get_builder("mysql")
+    query_builder = Query("mysql")
     query = query_builder.insert(
         "test_column",
         "another_test_column",
@@ -259,7 +257,7 @@ def test_insert():
 
 
 def test_insert_no_cols_query():
-    query_builder = QueryRegistry.get_builder("mysql")
+    query_builder = Query("mysql")
     query = query_builder.insert(
         into="test_table",
         values=(1, 2),
@@ -268,7 +266,7 @@ def test_insert_no_cols_query():
 
 
 def test_insert_multiple_values():
-    query_builder = QueryRegistry.get_builder("mysql")
+    query_builder = Query("mysql")
     query = query_builder.insert(
         "test_column", "another_test_column", into="test_table", values=[(1, 2), (3, 4)]
     ).build()
@@ -279,7 +277,7 @@ def test_insert_multiple_values():
 
 
 def test_insert_column_and_values_mismatch():
-    query_builder = QueryRegistry.get_builder("mysql")
+    query_builder = Query("mysql")
     with pytest.raises(AssertionError):
         query_builder.insert(
             "test_column", "another_test_column", into="test_table", values=(1,)
@@ -287,14 +285,14 @@ def test_insert_column_and_values_mismatch():
 
 
 def test_insert_no_table_provided():
-    query_builder = QueryRegistry.get_builder("mysql")
+    query_builder = Query("mysql")
     with pytest.raises(ValueError):
         query_builder.insert("test_column", "another_test_column", values=(1, 2))
 
 
 @pytest.mark.parametrize("return_value", ["id", "*"])
 def test_insert_with_returning(return_value):
-    query_builder = QueryRegistry.get_builder("postgres")
+    query_builder = Query("postgres")
     query = (
         query_builder.insert(
             "id", "employee_name", into="employees", values=(1, "'john doe'")
@@ -311,7 +309,7 @@ def test_insert_with_returning(return_value):
 
 
 def test_insert_with_returning_multiple_values():
-    query_builder = QueryRegistry.get_builder("postgres")
+    query_builder = Query("postgres")
     query = (
         query_builder.insert(
             "id", "employee_name", into="employees", values=(1, "'john doe'")
@@ -326,7 +324,7 @@ def test_insert_with_returning_multiple_values():
 
 
 def test_insert_returning_empty():
-    query_builder = QueryRegistry.get_builder("postgres")
+    query_builder = Query("postgres")
     query = (
         query_builder.insert(
             "id", "employee_name", into="employees", values=(1, "'john doe'")
@@ -338,3 +336,8 @@ def test_insert_returning_empty():
         query
         == 'INSERT INTO "employees" ("id", "employee_name") VALUES (1,\'john doe\') RETURNING *'
     )
+
+
+def test_invalid_dialect():
+    with pytest.raises(ValueError):
+        Query("non-existent-dialect")

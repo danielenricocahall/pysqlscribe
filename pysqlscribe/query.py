@@ -1,5 +1,4 @@
-from abc import ABC
-from typing import Dict, Self
+from typing import Self
 
 from pysqlscribe.ast.base import Node
 from pysqlscribe.ast.joins import JoinType
@@ -25,12 +24,13 @@ from pysqlscribe.dialects import (
 from pysqlscribe.dialects.base import DialectRegistry
 
 
-class Query(ABC):
+class Query:
     node: Node | None = None
-    _dialect_key: str
 
-    def __init__(self):
-        self._dialect = DialectRegistry.get_dialect(self._dialect_key)
+    def __init__(self, dialect: str):
+        if dialect not in DialectRegistry.dialects:
+            raise ValueError(f"Unsupported dialect: {dialect}")
+        self._dialect = DialectRegistry.get_dialect(dialect)
 
     @property
     def dialect(self) -> Dialect:
@@ -168,39 +168,3 @@ class Query(ABC):
     def enable_escape_identifiers(self):
         self.dialect.escape_identifiers_enabled = True
         return self
-
-
-class QueryRegistry:
-    builders: Dict[str, type[Query]] = {}
-
-    @classmethod
-    def register(cls, key: str):
-        def decorator(builder_class: type[Query]) -> type[Query]:
-            cls.builders[key] = builder_class
-            return builder_class
-
-        return decorator
-
-    @classmethod
-    def get_builder(cls, key: str) -> Query:
-        return cls.builders[key]()
-
-
-@QueryRegistry.register("mysql")
-class MySQLQuery(Query):
-    _dialect_key = "mysql"
-
-
-@QueryRegistry.register("oracle")
-class OracleQuery(Query):
-    _dialect_key = "oracle"
-
-
-@QueryRegistry.register("postgres")
-class PostgreSQLQuery(Query):
-    _dialect_key = "postgres"
-
-
-@QueryRegistry.register("sqlite")
-class SQLiteQuery(Query):
-    _dialect_key = "sqlite"

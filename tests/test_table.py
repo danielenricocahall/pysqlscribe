@@ -1,18 +1,13 @@
 import pytest
 
 from pysqlscribe.aggregate_functions import avg
-from pysqlscribe.query import JoinType
+from pysqlscribe.ast.joins import JoinType
 
-from pysqlscribe.table import (
-    MySQLTable,
-    OracleTable,
-    Table,
-    PostgresTable,
-)
+from pysqlscribe.table import Table
 
 
 def test_table_select():
-    table = MySQLTable("test_table", "test_column", "another_test_column")
+    table = Table("test_table", "test_column", "another_test_column", dialect="mysql")
     query = table.select("test_column").build()
     assert query == "SELECT `test_column` FROM `test_table`"
     assert hasattr(table, "test_column")
@@ -20,8 +15,12 @@ def test_table_select():
 
 
 def test_table_with_schema():
-    table = MySQLTable(
-        "test_table", "test_column", "another_test_column", schema="test_schema"
+    table = Table(
+        "test_table",
+        "test_column",
+        "another_test_column",
+        dialect="mysql",
+        schema="test_schema",
     )
     query = table.select("test_column", "another_test_column").build()
     assert (
@@ -31,19 +30,14 @@ def test_table_with_schema():
     assert table.table_name == "test_schema.test_table"
 
 
-def test_create_existing_table_type():
-    oracle_table_class = Table.create("oracle")
-    assert oracle_table_class == OracleTable
-
-
 def test_create_invalid_dialect():
     with pytest.raises(ValueError):
-        Table.create("non-existent-dialect")
+        Table("test_table", dialect="non-existent-dialect")
 
 
 def test_table_reassign_columns():
     old_columns = ["employees", "locations"]
-    table = OracleTable("capsule_corp", *old_columns)
+    table = Table("capsule_corp", *old_columns, dialect="oracle")
     new_columns = ["peons", "orders", "suppliers", "regions"]
     table.columns = new_columns
     assert all(hasattr(table, column) for column in new_columns)
@@ -51,7 +45,7 @@ def test_table_reassign_columns():
 
 
 def test_table_where_clause_fixed_value():
-    table = MySQLTable("test_table", "test_column")
+    table = Table("test_table", "test_column", dialect="mysql")
     query = table.select("test_column").where(table.test_column > 5).build()
     assert (
         query
@@ -60,7 +54,7 @@ def test_table_where_clause_fixed_value():
 
 
 def test_table_where_clause_other_column():
-    table = MySQLTable("test_table", "test_column", "other_test_column")
+    table = Table("test_table", "test_column", "other_test_column", dialect="mysql")
     query = (
         table.select(table.test_column)
         .where(table.test_column > table.other_test_column)
@@ -73,7 +67,9 @@ def test_table_where_clause_other_column():
 
 
 def test_table_select_all():
-    table = PostgresTable("employee", "first_name", "last_name", "dept", "salary")
+    table = Table(
+        "employee", "first_name", "last_name", "dept", "salary", dialect="postgres"
+    )
     query = table.select("*").where(table.dept == "Sales").build()
     assert query == "SELECT * FROM \"employee\" WHERE employee.dept = 'Sales'"
 
@@ -82,10 +78,10 @@ def test_table_select_all():
     "join_type", [JoinType.INNER, JoinType.OUTER, JoinType.LEFT, JoinType.RIGHT]
 )
 def test_table_join_with_conditions(join_type: JoinType):
-    employee_table = PostgresTable(
-        "employee", "first_name", "last_name", "dept", "payroll_id"
+    employee_table = Table(
+        "employee", "first_name", "last_name", "dept", "payroll_id", dialect="postgres"
     )
-    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    payroll_table = Table("payroll", "id", "salary", "category", dialect="postgres")
     query = (
         employee_table.select(
             employee_table.first_name, employee_table.last_name, employee_table.dept
@@ -101,10 +97,10 @@ def test_table_join_with_conditions(join_type: JoinType):
 
 @pytest.mark.parametrize("join_type", [JoinType.NATURAL, JoinType.CROSS])
 def test_table_join_without_conditions(join_type: JoinType):
-    employee_table = PostgresTable(
-        "employee", "first_name", "last_name", "dept", "payroll_id"
+    employee_table = Table(
+        "employee", "first_name", "last_name", "dept", "payroll_id", dialect="postgres"
     )
-    payroll_table = PostgresTable("payroll", "id", "salary", "category")
+    payroll_table = Table("payroll", "id", "salary", "category", dialect="postgres")
     query = (
         employee_table.select(
             employee_table.first_name, employee_table.last_name, employee_table.dept
@@ -119,7 +115,7 @@ def test_table_join_without_conditions(join_type: JoinType):
 
 
 def test_column_operations():
-    table = MySQLTable("employees", "salary", "bonus", "lti")
+    table = Table("employees", "salary", "bonus", "lti", dialect="mysql")
     query = table.select((table.salary * 0.75).as_("salary_after_taxes")).build()
     assert (
         query == "SELECT employees.salary * 0.75 AS salary_after_taxes FROM `employees`"
@@ -127,7 +123,7 @@ def test_column_operations():
 
 
 def test_add_two_columns():
-    table = MySQLTable("employees", "salary", "bonus", "lti")
+    table = Table("employees", "salary", "bonus", "lti", dialect="mysql")
     query = table.select((table.salary + table.bonus).as_("total_compensation")).build()
     assert (
         query
@@ -136,7 +132,7 @@ def test_add_two_columns():
 
 
 def test_add_more_than_two_columns():
-    table = MySQLTable("employees", "salary", "bonus", "lti")
+    table = Table("employees", "salary", "bonus", "lti", dialect="mysql")
     query = table.select(
         (table.salary + table.bonus + table.lti).as_("total_compensation")
     ).build()
@@ -147,7 +143,7 @@ def test_add_more_than_two_columns():
 
 
 def test_operations_columns_and_numerics():
-    table = MySQLTable("employees", "salary", "bonus")
+    table = Table("employees", "salary", "bonus", dialect="mysql")
     query = table.select(
         (table.salary * 1.25 + table.bonus).as_("total_compensation")
     ).build()
@@ -158,14 +154,14 @@ def test_operations_columns_and_numerics():
 
 
 def test_insert():
-    table = MySQLTable("employees", "salary", "bonus")
+    table = Table("employees", "salary", "bonus", dialect="mysql")
     query = table.insert(table.salary, table.bonus, values=(100, 200)).build()
     assert query == "INSERT INTO `employees` (`salary`, `bonus`) VALUES (100,200)"
 
 
 def test_subquery_columns():
-    employees = MySQLTable("employees", "salary", "bonus", "department_id")
-    departments = MySQLTable("departments", "id", "name", "manager_id")
+    employees = Table("employees", "salary", "bonus", "department_id", dialect="mysql")
+    departments = Table("departments", "id", "name", "manager_id", dialect="mysql")
     subquery = departments.select("id").where(departments.name == "Engineering")
     query = employees.select().where(employees.department_id.in_(subquery)).build()
     assert (
@@ -175,7 +171,7 @@ def test_subquery_columns():
 
 
 def test_groupby_having():
-    table = MySQLTable("employees", "salary", "department_id")
+    table = Table("employees", "salary", "department_id", dialect="mysql")
     query = (
         table.select(table.department_id, avg(table.salary).as_("avg_salary"))
         .group_by(table.department_id)
@@ -189,7 +185,7 @@ def test_groupby_having():
 
 
 def test_rename_table():
-    table = MySQLTable("old_table_name", "column1", "column2")
+    table = Table("old_table_name", "column1", "column2", dialect="mysql")
     table.table_name = "new_table_name"
     query = table.select("column1", "column2").where(table.column1 > 1).build()
     assert (

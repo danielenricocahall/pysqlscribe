@@ -34,7 +34,9 @@ class Schema:
     @tables.setter
     def tables(self, tables_: list[str | Table]):
         if all(isinstance(table, str) for table in tables_):
-            tables_ = [Table.create(self.dialect)(table_name) for table_name in tables_]
+            tables_ = [
+                Table(table_name, dialect=self.dialect) for table_name in tables_
+            ]
         for table in tables_:
             setattr(self, table.table_name, table)
             table.schema = self.name
