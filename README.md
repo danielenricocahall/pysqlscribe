@@ -515,7 +515,6 @@ This is anticipated to grow, also there are certainly operations that are missin
 
 # TODO
 - [ ] Add more dialects
-- [ ] Support `OFFSET` for Oracle and SQLServer
 - [ ] Improved injection mitigation
 - [ ] Support more aggregate and scalar functions
 - [ ] Enhance how where clauses are handled
