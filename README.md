@@ -4,16 +4,16 @@
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000)](https://github.com/danielenricocahall/pysqlscribe/blob/master/LICENSE)
 
 
-At some point during a project, whether it be personal or professional, you have likely needed to use SQL to interact with a relational database in your application code. In the event they are tables your team owns, you may have used an object-relational mapper (ORM) - such as [SQLAlchemy](https://www.sqlalchemy.org/), [Django](https://docs.djangoproject.com/en/5.2/topics/db/queries/#), [Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy), or [Piccolo](https://github.com/piccolo-orm/piccolo). However, if the operations are primarily read-only (for example, reading and presenting information on tables which are externally updated by another process) integrating an ORM either isn’t feasible or would induce more extra complexity than it’s worth. In this case, options are fairly limited outside of writing raw SQL queries in code, which introduces a different type of complexity around sanitizing and validating inputs, ensuring proper syntax, and all the other stuff (likely) engineers don’t want to expend energy on.
+At some point during a project, whether it be personal or professional, you have likely needed to use SQL to interact with a relational database in your application code. In the event they are tables your team owns, you may have used an object-relational mapper (ORM) - such as [SQLAlchemy](https://www.sqlalchemy.org/), [Django](https://docs.djangoproject.com/en/5.2/topics/db/queries/#), [Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy), or [Piccolo](https://github.com/piccolo-orm/piccolo). However, if the operations are primarily read-only (for example, reading and presenting information on tables which are externally updated by another process) integrating an ORM either isn't feasible or would induce more extra complexity than it's worth. In this case, options are fairly limited outside of writing raw SQL queries in code, which introduces a different type of complexity around sanitizing and validating inputs, ensuring proper syntax, and all the other stuff (likely) engineers don't want to expend energy on.
 
 
 While LLMs are fairly adept at building queries given the quantity of SQL on the internet, it still requires providing the table structure as context via DDL, verbal description, or an external tool that enables table metadata discovery. Additionally, when making updates, coding agents will need to ingest the strings and may make changes, potentially untested.
 
-This is `pysqlscribe`, a query building library which enables building SQL queries using objects. 
+This is `pysqlscribe`, a query building library which enables building SQL queries using objects.
 
 # Highlights
-- **Dialect Support**: Currently supports `mysql`, `postgres`, and `oracle`. More dialects can be added by subclassing the `Query` class and registering it with the `QueryRegistry`.
-- Dependency Free: No external dependencies outside of the Python standard library.
+- **Dialect Support**: Currently supports `mysql`, `postgres`, `oracle`, and `sqlite`. The dialect is supplied as a string argument — no subclassing required.
+- **Dependency Free**: No external dependencies outside of the Python standard library.
 - **Multiple APIs**: Offers multiple APIs for building queries, including a `Query` class, a `Table` class, and a `Schema` class.
 - **DDL Parser/Loader**: Can parse DDL files to create `Table` objects, facilitating integration with existing database schema definitions.
 - **Safe by default**: All identifiers are escaped by default to prevent SQL injection attacks, with the option to disable this behavior if desired.
@@ -31,47 +31,28 @@ pip install pysqlscribe
 
 ## Query
 
-A `Query` object can be constructed using the `QueryRegistry`'s `get_builder` if you supply a valid dialect (e.g; "mysql", "postgres", "oracle"). For example, "mysql" would be:
+A `Query` object is constructed by passing a dialect string (e.g. `"mysql"`, `"postgres"`, `"oracle"`, `"sqlite"`):
 
 ```python
-from pysqlscribe.query import QueryRegistry
+from pysqlscribe.query import Query
 
-query_builder = QueryRegistry.get_builder("mysql")
+query_builder = Query("mysql")
 query = query_builder.select("test_column", "another_test_column").from_("test_table").build()
 ```
 
-Alternatively, you can create the corresponding `Query` class associated with the dialect directly:
-
-```python
-from pysqlscribe.query import MySQLQuery
-
-query_builder = MySQLQuery()
-query = query_builder.select("test_column", "another_test_column").from_("test_table").build()
-```
-In both cases, the output is:
+Output:
 
 ```mysql
 SELECT `test_column`,`another_test_column` FROM `test_table`
 ```
 
-Furthermore, if there are any dialects that we currently don't support, you can create your own by subclassing `Query` and registering it with the `QueryRegistry`:
-
-```python
-from pysqlscribe.query import QueryRegistry, Query
-
-
-@QueryRegistry.register("custom")
-class CustomQuery(Query):
-    ...
-```
-
 ## Table
-An alternative method for building queries is through the `Table` object:
+An alternative method for building queries is through the `Table` object. The `dialect` is supplied as a keyword argument:
 
 ```python
-from pysqlscribe.table import MySQLTable
+from pysqlscribe.table import Table
 
-table = MySQLTable("test_table", "test_column", "another_test_column")
+table = Table("test_table", "test_column", "another_test_column", dialect="mysql")
 query = table.select("test_column").build()
 ```
 
@@ -80,12 +61,12 @@ Output:
 SELECT `test_column` FROM `test_table`
 ```
 
-A schema for the table can also be provided as a keyword argument, after the columns:
+A schema for the table can also be provided:
 
 ```python
-from pysqlscribe.table import MySQLTable
+from pysqlscribe.table import Table
 
-table = MySQLTable("test_table", "test_column", "another_test_column", schema="test_schema")
+table = Table("test_table", "test_column", "another_test_column", dialect="mysql", schema="test_schema")
 query = table.select("test_column").build()
 ```
 
@@ -94,34 +75,24 @@ Output:
 SELECT `test_column` FROM `test_schema.test_table`
 ```
 
-`Table` also offers a `create` method in the event you've added a new dialect which doesn't have an associated `Table` implementation, or if you need to change it for different environments (e.g; `sqlite` for local development, `mysql`/`postgres`/`oracle`/etc. for deployment):
+You can overwrite the original columns supplied to a `Table` as well, which will delete the old attributes and set new ones:
 
 ```python
 from pysqlscribe.table import Table
 
-new_dialect_table_class = Table.create(
-    "new-dialect")  # assuming you've registered "new-dialect" with the `QueryRegistry`
-table = new_dialect_table_class("test_table", "test_column", "another_test_column")
-```
-
-You can overwrite the original columns supplied to a `Table` as well, which will delete the old attributes and set new ones:
-
-```python
-from pysqlscribe.table import MySQLTable
-
-table = MySQLTable("test_table", "test_column", "another_test_column")
+table = Table("test_table", "test_column", "another_test_column", dialect="mysql")
 table.test_column  # valid
-table.fields = ['new_test_column']
+table.columns = ['new_test_column']
 table.select("new_test_column")
 table.new_test_column  # now valid - but `table.test_column` is not anymore
 ```
 
-Additionally, you can reference the `Column` attributes `Table` object when constructing queries. For example, in a `WHERE` clause:
+Additionally, you can reference the `Column` attributes on a `Table` object when constructing queries. For example, in a `WHERE` clause:
 
 ```python
-from pysqlscribe.table import PostgresTable
+from pysqlscribe.table import Table
 
-table = PostgresTable("employee", "first_name", "last_name", "salary", "location")
+table = Table("employee", "first_name", "last_name", "salary", "location", dialect="postgres")
 table.select("first_name", "last_name", "location").where(table.salary > 1000).build()
 ```
 
@@ -134,12 +105,10 @@ SELECT "first_name","last_name","location" FROM "employee" WHERE salary > 1000
 and in a `JOIN`:
 
 ```python
-from pysqlscribe.table import PostgresTable
+from pysqlscribe.table import Table
 
-employee_table = PostgresTable(
-        "employee", "first_name", "last_name", "dept", "payroll_id"
-    )
-payroll_table = PostgresTable("payroll", "id", "salary", "category")
+employee_table = Table("employee", "first_name", "last_name", "dept", "payroll_id", dialect="postgres")
+payroll_table = Table("payroll", "id", "salary", "category", dialect="postgres")
 query = (
     employee_table.select(
         employee_table.first_name, employee_table.last_name, employee_table.dept
@@ -168,10 +137,10 @@ schema.tables  # a list of two `Table` objects
 This is functionally equivalent to:
 
 ```python
-from pysqlscribe.table import PostgresTable
+from pysqlscribe.table import Table
 
-table = PostgresTable("test_table", schema="test_schema")
-another_table = PostgresTable("another_test_table", schema="test_schema")
+table = Table("test_table", dialect="postgres", schema="test_schema")
+another_table = Table("another_test_table", dialect="postgres", schema="test_schema")
 ```
 
 Instead of supplying a `dialect` directly to `Schema`, you can also set the environment variable `PYSQLSCRIBE_BUILDER_DIALECT`:
@@ -184,17 +153,17 @@ export PYSQLSCRIBE_BUILDER_DIALECT = 'postgres'
 from pysqlscribe.schema import Schema
 
 schema = Schema("test_schema", tables=["test_table", "another_test_table"])
-schema.tables  # a list of two `PostgresTable` objects
+schema.tables  # a list of two `Table` objects
 ```
 
 Alternatively, if you already have existing `Table` objects you want to associate with the schema, you can supply them directly (in this case, `dialect` is not needed):
 
 ```python
 from pysqlscribe.schema import Schema
-from pysqlscribe.table import PostgresTable
+from pysqlscribe.table import Table
 
-table = PostgresTable("test_table")
-another_table = PostgresTable("another_test_table")
+table = Table("test_table", dialect="postgres")
+another_table = Table("another_test_table", dialect="postgres")
 schema = Schema("test_schema", [table, another_table])
 ```
 
@@ -209,9 +178,9 @@ schema.test_table # will return the supplied table object with the name `"test_t
 Arithmetic operations can be performed on columns, both on `Column` objects and scalar values:
 
 ```python
-from pysqlscribe.table import MySQLTable
+from pysqlscribe.table import Table
 
-table = MySQLTable("employees", "salary", "bonus", "lti")
+table = Table("employees", "salary", "bonus", "lti", dialect="mysql")
 query = table.select(
     (table.salary + table.bonus + table.lti).as_("total_compensation")
 ).build()
@@ -220,13 +189,13 @@ query = table.select(
 Output:
 
 ```mysql
-SELECT employees.salary + employees.bonus + employees.lti AS total_compensation FROM `employees` 
+SELECT employees.salary + employees.bonus + employees.lti AS total_compensation FROM `employees`
 ```
 
 ```python
-from pysqlscribe.table import MySQLTable
+from pysqlscribe.table import Table
 
-table = MySQLTable("employees", "salary", "bonus", "lti")
+table = Table("employees", "salary", "bonus", "lti", dialect="mysql")
 query = table.select((table.salary * 0.75).as_("salary_after_taxes")).build()
 ```
 
@@ -241,8 +210,9 @@ SELECT employees.salary * 0.75 AS salary_after_taxes FROM `employees`
 Membership operations such as `IN` and `NOT IN` are supported:
 
 ```python
-from pysqlscribe.table import MySQLTable
-table = MySQLTable("employees", "salary", "bonus", "department_id")
+from pysqlscribe.table import Table
+
+table = Table("employees", "salary", "bonus", "department_id", dialect="mysql")
 query = table.select().where(table.department_id.in_([1, 2, 3])).build()
 
 ```
@@ -258,12 +228,11 @@ SELECT * FROM `employees` WHERE department_id IN (1,2,3)
 For computing aggregations (e.g; `MAX`, `AVG`, `COUNT`) or performing scalar operations (e.g; `ABS`, `SQRT`, `UPPER`), we have functions available in the `aggregate_functions` and `scalar_functions` modules which will accept both strings or columns:
 
 ```python
-from pysqlscribe.table import PostgresTable
+from pysqlscribe.table import Table
 from pysqlscribe.aggregate_functions import max_
 from pysqlscribe.scalar_functions import upper
-table = PostgresTable(
-    "employee", "first_name", "last_name", "store_location", "salary"
-)
+
+table = Table("employee", "first_name", "last_name", "store_location", "salary", dialect="postgres")
 query = (
     table.select(upper(table.store_location), max_(table.salary))
     .group_by(table.store_location)
@@ -285,9 +254,10 @@ SELECT UPPER(store_location),MAX(salary) FROM "employee" GROUP BY "store_locatio
 ## Combining Queries
 You can combine queries using the `union`, `intersect`, and `except` methods, providing either another `Query` object or a string:
 ```python
-from pysqlscribe.query import QueryRegistry
-query_builder = QueryRegistry.get_builder("mysql")
-another_query_builder = QueryRegistry.get_builder("mysql")
+from pysqlscribe.query import Query
+
+query_builder = Query("mysql")
+another_query_builder = Query("mysql")
 query = (
     query_builder.select("test_column", "another_test_column")
     .from_("test_table")
@@ -307,10 +277,10 @@ SELECT `test_column`,`another_test_column` FROM `test_table` UNION SELECT `test_
 
 to perform `all` for each combination operation, you supply the argument `all_`:
 ```python
+from pysqlscribe.query import Query
 
-from pysqlscribe.query import QueryRegistry
-query_builder = QueryRegistry.get_builder("mysql")
-another_query_builder = QueryRegistry.get_builder("mysql")
+query_builder = Query("mysql")
+another_query_builder = Query("mysql")
 query = (
     query_builder.select("test_column", "another_test_column")
     .from_("test_table")
@@ -332,11 +302,9 @@ SELECT `test_column`,`another_test_column` FROM `test_table` UNION ALL SELECT `t
 For aliasing tables and columns, you can use the `as_` method on the `Table` or `Column` objects:
 
 ```python
-from pysqlscribe.table import PostgresTable
+from pysqlscribe.table import Table
 
-employee_table = PostgresTable(
-    "employee", "first_name", "last_name", "dept", "payroll_id"
-)
+employee_table = Table("employee", "first_name", "last_name", "dept", "payroll_id", dialect="postgres")
 query = (
     employee_table.as_("e").select(employee_table.first_name.as_("name")).build()
 )
@@ -352,10 +320,10 @@ SELECT "first_name" AS name FROM "employee" AS e
 Subqueries can be used when evaluating `Column`s in the form of a membership:
 
 ```python
-from pysqlscribe.table import MySQLTable
+from pysqlscribe.table import Table
 
-employees = MySQLTable("employees", "salary", "bonus", "department_id")
-departments = MySQLTable("departments", "id", "name", "manager_id")
+employees = Table("employees", "salary", "bonus", "department_id", dialect="mysql")
+departments = Table("departments", "id", "name", "manager_id", dialect="mysql")
 subquery = departments.select("id").where(departments.name == "Engineering")
 query = employees.select().where(employees.department_id.in_(subquery)).build()
 ```
@@ -369,9 +337,9 @@ SELECT * FROM `employees` WHERE employees.department_id IN (SELECT `id` FROM `de
 While the primary focus of this library is on building retrieval (`"SELECT"`) queries, you can also build `INSERT` queries:
 
 ```python
-from pysqlscribe.query import QueryRegistry
+from pysqlscribe.query import Query
 
-query_builder = QueryRegistry.get_builder("mysql")
+query_builder = Query("mysql")
 query = query_builder.insert(
     "test_column",
     "another_test_column",
@@ -389,9 +357,9 @@ INSERT INTO `test_table` (`test_column`,`another_test_column`) VALUES (1,2)
 While `into` and `values` are required keyword arguments, if no positional arguments (`args`) are supplied, it is omitted from the query:
 
 ```python
-from pysqlscribe.query import QueryRegistry
+from pysqlscribe.query import Query
 
-query_builder = QueryRegistry.get_builder("mysql")
+query_builder = Query("mysql")
 query = query_builder.insert(
     into="test_table",
     values=(1, 2),
@@ -408,9 +376,9 @@ INSERT INTO `test_table` VALUES (1,2)
 Multiple values can also be supplied:
 
 ```python
-from pysqlscribe.query import QueryRegistry
+from pysqlscribe.query import Query
 
-query_builder = QueryRegistry.get_builder("mysql")
+query_builder = Query("mysql")
 query = query_builder.insert(
     "test_column", "another_test_column", into="test_table", values=[(1, 2), (3, 4)]
 ).build()
@@ -424,8 +392,9 @@ INSERT INTO `test_table` (`test_column`,`another_test_column`) VALUES (1,2),(3,4
 `RETURNING` is also supported:
 
 ```python
-from pysqlscribe.query import QueryRegistry
-query_builder = QueryRegistry.get_builder("postgres")
+from pysqlscribe.query import Query
+
+query_builder = Query("postgres")
 query = (
     query_builder.insert(
         "id", "employee_name", into="employees", values=(1, "'john doe'")
@@ -437,16 +406,16 @@ query = (
 
 Output:
 
-```postgresql   
+```postgresql
 INSERT INTO "employees" ("id","employee_name") VALUES (1,'john doe') RETURNING "id","employee_name"
 ```
 
 The `Table` API offers the `insert` capability. Similar to `select`, the `into` argument is inferred from the table name:
 
 ```python
-from pysqlscribe.table import MySQLTable
+from pysqlscribe.table import Table
 
-table = MySQLTable("employees", "salary", "bonus")
+table = Table("employees", "salary", "bonus", dialect="mysql")
 query = table.insert(table.salary, table.bonus, values=(100, 200)).build()
 ```
 
@@ -461,8 +430,9 @@ By default, all identifiers are escaped using the corresponding dialect's escape
 
 
 ```python
-from pysqlscribe.query import QueryRegistry
-query_builder = QueryRegistry.get_builder("mysql").disable_escape_identifiers()
+from pysqlscribe.query import Query
+
+query_builder = Query("mysql").disable_escape_identifiers()
 query = (
     query_builder.select("test_column", "another_test_column")
     .from_("test_table")
@@ -479,9 +449,9 @@ SELECT test_column,another_test_column FROM test_table WHERE test_column = 1 AND
 If you want to switch preferences, there's a corresponding `enable_escape_identifiers` method:
 
 ```python
-from pysqlscribe.query import QueryRegistry
+from pysqlscribe.query import Query
 
-query_builder = QueryRegistry.get_builder("mysql").disable_escape_identifiers()
+query_builder = Query("mysql").disable_escape_identifiers()
 query = (
     query_builder.select("test_column", "another_test_column")
     .enable_escape_identifiers()
@@ -530,10 +500,10 @@ CREATE TABLE cool_company.employees (
 parsed = parse_create_tables(sql) # will be a dictionary of table name to table metadata e.g; columns, schema
 parsed # {'employees': {'columns': ['employee_id', 'salary', 'role'], 'schema': 'cool_company'}}
 tables = create_tables_from_parsed(
-    parsed, 
+    parsed,
     dialect="mysql"
 ) # dictionary of table name to `Table` object
-tables # {'employees': MysqlTable(name=cool_company.employees, columns=('employee_id', 'salary', 'role'))}
+tables # {'employees': Table(name=cool_company.employees, columns=('employee_id', 'salary', 'role'))}
 ```
 # Supported Dialects
 This is anticipated to grow, also there are certainly operations that are missing within dialects.
@@ -546,7 +516,7 @@ This is anticipated to grow, also there are certainly operations that are missin
 # TODO
 - [ ] Add more dialects
 - [ ] Support `OFFSET` for Oracle and SQLServer
-- [ ] Improved injection mitigation  
+- [ ] Improved injection mitigation
 - [ ] Support more aggregate and scalar functions
 - [ ] Enhance how where clauses are handled
 
