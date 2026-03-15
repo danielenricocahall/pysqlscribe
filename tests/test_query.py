@@ -9,23 +9,34 @@ from pysqlscribe.renderers.base import UNION, EXCEPT, INTERSECT
 
 
 @pytest.mark.parametrize(
-    "fields",
-    [["test_column"], ["test_column", "another_test_column"]],
-    ids=["single field", "multiple fields"],
+    "dialect,fields",
+    [
+        ("mysql", ["test_column"]),
+        ("mysql", ["test_column", "another_test_column"]),
+        ("sqlserver", ["test_column"]),
+        ("sqlserver", ["test_column", "another_test_column"]),
+    ],
+    ids=[
+        "mysql single field",
+        "mysql multiple fields",
+        "sqlserver single field",
+        "sqlserver multiple fields",
+    ],
 )
-def test_select_query(fields):
-    query_builder = Query("mysql")
+def test_select_query(dialect, fields):
+    query_builder = Query(dialect)
     query = query_builder.select(*fields).from_("test_table").build()
-    fields = [
-        query_builder.dialect.escape_identifier(identifier) for identifier in fields
-    ]
-    assert query == f"SELECT {', '.join(fields)} FROM `test_table`"
+    e = query_builder.dialect.escape_identifier
+    escaped_fields = [e(f) for f in fields]
+    assert query == f"SELECT {', '.join(escaped_fields)} FROM {e('test_table')}"
 
 
-def test_select_query_no_columns():
-    query_builder = Query("mysql")
+@pytest.mark.parametrize("dialect", ["mysql", "sqlserver"])
+def test_select_query_no_columns(dialect):
+    query_builder = Query(dialect)
     query = query_builder.select().from_("test_table").build()
-    assert query == "SELECT * FROM `test_table`"
+    e = query_builder.dialect.escape_identifier
+    assert query == f"SELECT * FROM {e('test_table')}"
 
 
 @pytest.mark.parametrize(
@@ -60,6 +71,22 @@ def test_select_query_with_limit_and_offset():
     )
 
 
+def test_select_with_offset_and_limit_sqlserver():
+    query_builder = Query("sqlserver")
+    query = (
+        query_builder.select("test_column")
+        .from_("test_table")
+        .order_by("test_column")
+        .offset(5)
+        .limit(10)
+        .build()
+    )
+    assert (
+        query
+        == "SELECT [test_column] FROM [test_table] ORDER BY [test_column] OFFSET 5 ROWS FETCH NEXT 10 ROWS ONLY"
+    )
+
+
 def test_select_query_with_order_by():
     query_builder = Query("mysql")
     query = (
@@ -74,17 +101,19 @@ def test_select_query_with_order_by():
     )
 
 
-def test_where_clause():
-    query_builder = Query("mysql")
+@pytest.mark.parametrize("dialect", ["mysql", "sqlserver"])
+def test_where_clause(dialect):
+    query_builder = Query(dialect)
     query = (
         query_builder.select("test_column", "another_test_column")
         .from_("test_table")
         .where("test_column = 1", "another_test_column > 2")
         .build()
     )
+    e = query_builder.dialect.escape_identifier
     assert (
         query
-        == "SELECT `test_column`, `another_test_column` FROM `test_table` WHERE test_column = 1 AND another_test_column > 2"
+        == f"SELECT {e('test_column')}, {e('another_test_column')} FROM {e('test_table')} WHERE test_column = 1 AND another_test_column > 2"
     )
 
 
@@ -106,17 +135,24 @@ def test_group_by_having():
 
 
 @pytest.mark.parametrize(
-    "join_type", [JoinType.INNER, JoinType.OUTER, JoinType.LEFT, JoinType.RIGHT]
+    "join_type,dialect",
+    list(
+        product(
+            [JoinType.INNER, JoinType.OUTER, JoinType.LEFT, JoinType.RIGHT],
+            ["oracle", "sqlserver"],
+        )
+    ),
 )
-def test_joins_with_conditions(join_type: JoinType):
-    query_builder = Query("oracle")
+def test_joins_with_conditions(join_type: JoinType, dialect: str):
+    query_builder = Query(dialect)
     query_builder.select("employee_id", "store_location").from_("employees").join(
         "payroll", join_type, "employees.payroll_id = payroll.id"
     )
     query = query_builder.build()
+    e = query_builder.dialect.escape_identifier
     assert (
         query
-        == f'SELECT "employee_id", "store_location" FROM "employees" {join_type} JOIN "payroll" ON employees.payroll_id = payroll.id'
+        == f"SELECT {e('employee_id')}, {e('store_location')} FROM {e('employees')} {join_type} JOIN {e('payroll')} ON employees.payroll_id = payroll.id"
     )
 
 
@@ -246,17 +282,19 @@ def test_combine_operations(all_, combine_operation):
     )
 
 
-def test_insert():
-    query_builder = Query("mysql")
+@pytest.mark.parametrize("dialect", ["mysql", "sqlserver"])
+def test_insert(dialect):
+    query_builder = Query(dialect)
     query = query_builder.insert(
         "test_column",
         "another_test_column",
         into="test_table",
         values=(1, 2),
     ).build()
+    e = query_builder.dialect.escape_identifier
     assert (
         query
-        == "INSERT INTO `test_table` (`test_column`, `another_test_column`) VALUES (1,2)"
+        == f"INSERT INTO {e('test_table')} ({e('test_column')}, {e('another_test_column')}) VALUES (1,2)"
     )
 
 
