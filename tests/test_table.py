@@ -2,7 +2,6 @@ import pytest
 
 from pysqlscribe.aggregate_functions import avg
 from pysqlscribe.ast.joins import JoinType
-from pysqlscribe.query import Query
 from pysqlscribe.table import Table
 
 
@@ -10,7 +9,7 @@ from pysqlscribe.table import Table
 def test_table_select(dialect):
     table = Table("test_table", "test_column", "another_test_column", dialect=dialect)
     query = table.select("test_column").build()
-    e = Query(dialect).dialect.escape_identifier
+    e = table.dialect.escape_identifier
     assert query == f"SELECT {e('test_column')} FROM {e('test_table')}"
     assert hasattr(table, "test_column")
     assert table.columns == ("test_column", "another_test_column")
@@ -50,7 +49,7 @@ def test_table_reassign_columns():
 def test_table_where_clause_fixed_value(dialect):
     table = Table("test_table", "test_column", dialect=dialect)
     query = table.select("test_column").where(table.test_column > 5).build()
-    e = Query(dialect).dialect.escape_identifier
+    e = table.dialect.escape_identifier
     assert (
         query
         == f"SELECT {e('test_column')} FROM {e('test_table')} WHERE test_table.test_column > 5"
