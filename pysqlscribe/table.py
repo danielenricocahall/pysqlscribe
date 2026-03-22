@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import List, Self
 
 from pysqlscribe.alias import AliasMixin
-from pysqlscribe.column import Column
+from pysqlscribe.column import Column, SortedColumn
 from pysqlscribe.exceptions import InvalidTableNameException
 from pysqlscribe.ast.joins import JoinType
 from pysqlscribe.query import Query
@@ -29,7 +29,12 @@ class Table(Query, AliasMixin):
 
     def order_by(self, *columns) -> Self:
         columns = [
-            column.name if isinstance(column, Column) else column for column in columns
+            column
+            if isinstance(column, SortedColumn)
+            else column.name
+            if isinstance(column, Column)
+            else column
+            for column in columns
         ]
         return super().order_by(*columns)
 

@@ -192,3 +192,27 @@ def test_rename_table():
         query
         == "SELECT `column1`, `column2` FROM `new_table_name` WHERE new_table_name.column1 > 1"
     )
+
+
+def test_order_by_asc():
+    table = Table("test_table", "cost", "name", dialect="sqlite")
+    query = table.select("*").order_by(table.cost.asc()).build()
+    assert query == 'SELECT * FROM "test_table" ORDER BY "cost" ASC'
+
+
+def test_order_by_desc():
+    table = Table("test_table", "cost", "name", dialect="sqlite")
+    query = table.select("*").order_by(table.cost.desc()).build()
+    assert query == 'SELECT * FROM "test_table" ORDER BY "cost" DESC'
+
+
+def test_order_by_multiple_columns_mixed_direction():
+    table = Table("test_table", "cost", "name", dialect="sqlite")
+    query = table.select("*").order_by(table.cost.asc(), table.name.desc()).build()
+    assert query == 'SELECT * FROM "test_table" ORDER BY "cost" ASC, "name" DESC'
+
+
+def test_order_by_plain_string_unchanged():
+    table = Table("test_table", "cost", "name", dialect="sqlite")
+    query = table.select("*").order_by("cost").build()
+    assert query == 'SELECT * FROM "test_table" ORDER BY "cost"'

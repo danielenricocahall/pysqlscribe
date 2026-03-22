@@ -70,6 +70,20 @@ def test_select_query_with_order_by():
     )
 
 
+def test_select_query_with_order_by_multiple_columns():
+    query_builder = Query("mysql")
+    query = (
+        query_builder.select("test_column", "another_test_column")
+        .from_("test_table")
+        .order_by("test_column", "another_test_column")
+        .build()
+    )
+    assert (
+        query
+        == "SELECT `test_column`, `another_test_column` FROM `test_table` ORDER BY `test_column`, `another_test_column`"
+    )
+
+
 def test_where_clause():
     query_builder = Query("mysql")
     query = (

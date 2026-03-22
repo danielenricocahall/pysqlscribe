@@ -167,6 +167,20 @@ class Column(AliasMixin):
     def not_between(self, low, high) -> Expression:
         return self._between(low, high, "NOT BETWEEN")
 
+    def asc(self) -> "SortedColumn":
+        return SortedColumn(self.name, "ASC")
+
+    def desc(self) -> "SortedColumn":
+        return SortedColumn(self.name, "DESC")
+
+
+class SortedColumn:
+    """A column paired with a sort direction, produced by Column.asc() or Column.desc()."""
+
+    def __init__(self, name: str, direction: str):
+        self.name = name
+        self.direction = direction.upper()
+
 
 class ExpressionColumn(Column):
     """Representation of a column that is the result of an arithmetic operation. Main benefit is to ensure the

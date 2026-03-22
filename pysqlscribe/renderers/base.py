@@ -18,6 +18,7 @@ from pysqlscribe.ast.nodes import (
     InsertNode,
     ReturningNode,
 )
+from pysqlscribe.column import SortedColumn
 from pysqlscribe.protocols import DialectProtocol
 from pysqlscribe.regex_patterns import WILDCARD_REGEX
 
@@ -94,8 +95,14 @@ class Renderer:
         return f"{GROUP_BY} {columns}"
 
     def render_order_by(self, node: OrderByNode) -> str:
-        columns = self.dialect.normalize_identifiers_args(node.state["columns"])
-        return f"{ORDER_BY} {columns}"
+        parts = []
+        for col in node.state["columns"]:
+            if isinstance(col, SortedColumn):
+                escaped = self.dialect.normalize_identifiers_args([col.name])
+                parts.append(f"{escaped} {col.direction}")
+            else:
+                parts.append(self.dialect.normalize_identifiers_args([col]))
+        return f"{ORDER_BY} {', '.join(parts)}"
 
     def render_limit(self, node: LimitNode) -> str:
         return f"{LIMIT} {node.state['limit']}"
