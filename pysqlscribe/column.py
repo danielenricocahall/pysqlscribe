@@ -23,6 +23,14 @@ class Expression:
         return f"Expression({self.left!r}, {self.operator!r}, {self.right!r})"
 
 
+class OrderedColumn:
+    """A column paired with a sort direction, produced by Column.asc() or Column.desc()."""
+
+    def __init__(self, name: str, direction: str):
+        self.name = name
+        self.direction = direction.upper()
+
+
 @runtime_checkable
 class Subqueryish(Protocol):
     @property
@@ -166,6 +174,15 @@ class Column(AliasMixin):
 
     def not_between(self, low, high) -> Expression:
         return self._between(low, high, "NOT BETWEEN")
+
+    def _sort(self, direction: str) -> OrderedColumn:
+        return OrderedColumn(self.name, direction)
+
+    def asc(self) -> "OrderedColumn":
+        return self._sort("ASC")
+
+    def desc(self) -> "OrderedColumn":
+        return self._sort("DESC")
 
 
 class ExpressionColumn(Column):
