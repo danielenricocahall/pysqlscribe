@@ -18,7 +18,7 @@ from pysqlscribe.ast.nodes import (
     InsertNode,
     ReturningNode,
 )
-from pysqlscribe.column import SortedColumn
+from pysqlscribe.column import OrderedColumn
 from pysqlscribe.protocols import DialectProtocol
 from pysqlscribe.regex_patterns import WILDCARD_REGEX
 
@@ -97,7 +97,7 @@ class Renderer:
     def render_order_by(self, node: OrderByNode) -> str:
         parts = []
         for col in node.state["columns"]:
-            if isinstance(col, SortedColumn):
+            if isinstance(col, OrderedColumn):
                 escaped = self.dialect.normalize_identifiers_args([col.name])
                 parts.append(f"{escaped} {col.direction}")
             else:
