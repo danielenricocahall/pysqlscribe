@@ -110,7 +110,7 @@ wheels = [
 
 [[package]]
 name = "pysqlscribe"
-version = "0.10.2"
+version = "0.11.1"
 source = { editable = "." }
 
 [package.dev-dependencies]
