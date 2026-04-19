@@ -19,6 +19,7 @@ from pysqlscribe.ast.nodes import (
 )
 from pysqlscribe.env_utils import str2bool
 from pysqlscribe.exceptions import DialectValidationError
+from pysqlscribe.protocols import Subqueryish
 from pysqlscribe.regex_patterns import (
     ALIAS_SPLIT_REGEX,
     VALID_IDENTIFIER_REGEX,
@@ -143,8 +144,8 @@ class Dialect(ABC):
             arg = [arg]
         identifiers = []
 
-        for identifier in arg:
-            identifier = str(identifier).strip()
+        for unnormalized_identifier in arg:
+            identifier = str(unnormalized_identifier).strip()
 
             if len(parts := ALIAS_SPLIT_REGEX.split(identifier, maxsplit=1)) == 2:
                 base, alias = parts[0].strip(), parts[1].strip()
@@ -154,6 +155,14 @@ class Dialect(ABC):
                     raise ValueError(f"Invalid SQL alias: {alias}")
 
                 identifiers.append(f"{identifier} AS {alias}")
+            elif isinstance(unnormalized_identifier, Subqueryish):
+                # TODO clunky, also should revisit if we can propagate columns in here to avoid that alias regex above
+                identifier = (
+                    f"({identifier}){unnormalized_identifier.alias}"
+                    if unnormalized_identifier.alias
+                    else f"({identifier})"
+                )
+                identifiers.append(identifier)
             else:
                 identifiers.append(self.validate_identifier(identifier))
 

@@ -1,5 +1,6 @@
 from typing import Self
 
+from pysqlscribe.alias import AliasMixin
 from pysqlscribe.ast.base import Node
 from pysqlscribe.ast.joins import JoinType
 from pysqlscribe.ast.nodes import (
@@ -22,7 +23,7 @@ from pysqlscribe.dialects import (
 from pysqlscribe.dialects.base import DialectRegistry
 
 
-class Query:
+class Query(AliasMixin):
     node: Node | None = None
 
     def __init__(self, dialect: str):

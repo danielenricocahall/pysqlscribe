@@ -1,4 +1,4 @@
-from typing import runtime_checkable, Protocol, Any
+from typing import runtime_checkable, Protocol, Any, Self
 
 
 @runtime_checkable
@@ -9,3 +9,9 @@ class DialectProtocol(Protocol):
     def validate_identifier(self, identifier: str) -> str: ...
     def normalize_identifiers_args(self, args: Any) -> str: ...
     def escape_value(self, value) -> str: ...
+
+
+@runtime_checkable
+class Subqueryish(Protocol):
+    @property
+    def select(self) -> Self: ...

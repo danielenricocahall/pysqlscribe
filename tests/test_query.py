@@ -2,6 +2,7 @@ from itertools import product
 
 import pytest
 
+from pysqlscribe.aggregate_functions import avg
 from pysqlscribe.exceptions import InvalidJoinError, InvalidNodeError
 from pysqlscribe.ast.joins import JoinType
 from pysqlscribe.query import Query
@@ -353,3 +354,20 @@ def test_oracle_offset_limit_without_order_by():
 def test_oracle_rejects_nodes_after_limit():
     with pytest.raises(InvalidNodeError):
         Query("oracle").select("x").from_("t").limit(10).order_by("x").build()
+
+
+def test_subquery():
+    query_builder = Query("mysql")
+    query_builder.select("department", avg("salary")).from_("employees").group_by(
+        "department"
+    )
+    another_query_builder = Query("mysql")
+    query = (
+        another_query_builder.select("*")
+        .from_(query_builder.as_("aggregated_employees"))
+        .build()
+    )
+    assert (
+        query
+        == "SELECT * FROM (SELECT `department`, AVG(salary) FROM `employees` GROUP BY `department`) AS aggregated_employees"
+    )
