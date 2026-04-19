@@ -2,6 +2,7 @@ from typing import Self, Iterable, Protocol, runtime_checkable
 
 from pysqlscribe.alias import AliasMixin
 from pysqlscribe.exceptions import InvalidColumnNameException
+from pysqlscribe.functions import ScalarFunctions
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
     AGGREGATE_IDENTIFIER_REGEX,
@@ -177,18 +178,22 @@ class Column(AliasMixin):
 
     def __round__(self, ndigits: int | None = None):
         round_expr = (
-            f"ROUND({self.name}, {ndigits})" if ndigits else f"ROUND({self.name})"
+            f"{ScalarFunctions.ROUND}({self.name}, {ndigits})"
+            if ndigits
+            else f"ROUND({self.name})"
         )
         return ExpressionColumn(round_expr, self.table_name)
 
     def __abs__(self):
-        return ExpressionColumn(f"ABS({self.name})", self.table_name)
+        return ExpressionColumn(f"{ScalarFunctions.ABS}({self.name})", self.table_name)
 
     def __floor__(self):
-        return ExpressionColumn(f"FLOOR({self.name})", self.table_name)
+        return ExpressionColumn(
+            f"{ScalarFunctions.FLOOR}({self.name})", self.table_name
+        )
 
     def __ceil__(self):
-        return ExpressionColumn(f"CEIL({self.name})", self.table_name)
+        return ExpressionColumn(f"{ScalarFunctions.CEIL}({self.name})", self.table_name)
 
     def in_(self, values: Iterable[str | int | float] | Subqueryish) -> Expression:
         return self._membership_expression("IN", values)
