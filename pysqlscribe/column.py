@@ -21,6 +21,8 @@ def _ansi_escape_value(value) -> str:
         return "'" + value.replace("'", "''") + "'"
     if isinstance(value, (int, float)):
         return str(value)
+    if value is None:
+        return "NULL"
     raise NotImplementedError(
         f"Unsupported value type for SQL literal: {type(value).__name__}"
     )

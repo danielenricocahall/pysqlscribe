@@ -212,6 +212,15 @@ def test_case_with_alias():
     )
 
 
+def test_case_handle_none():
+    col = Column("salary", "employees")
+    expr = case_().when(col > 100000, 1).when(col > 50000, 2).else_(None)
+    assert (
+        str(expr)
+        == "CASE WHEN employees.salary > 100000 THEN 1 WHEN employees.salary > 50000 THEN 2 ELSE NULL END"
+    )
+
+
 def test_case_empty_raises():
     with pytest.raises(ValueError):
         str(case_())
