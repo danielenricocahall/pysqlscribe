@@ -1,7 +1,11 @@
 import math
 
-from pysqlscribe.column import Column, ExpressionColumn
+from pysqlscribe.column import Column, ExpressionColumn, _resolve_value
 from pysqlscribe.functions import ScalarFunctions
+
+
+def _dialect_from(args) -> object | None:
+    return next((a._dialect for a in args if isinstance(a, Column)), None)
 
 
 def _scalar_function(scalar_function: str, column: Column | str | int) -> Column | str:
@@ -104,9 +108,14 @@ def concat(*args: Column | str | int):
         return ExpressionColumn(
             f"{ScalarFunctions.CONCAT}({', '.join(arg.name for arg in args)})",
             args[0].table_name,
+            dialect=args[0]._dialect,
         )
-    args = [f"'{arg}'" if not isinstance(arg, Column) else str(arg) for arg in args]
-    return f"{ScalarFunctions.CONCAT}({', '.join(args)})"
+    dialect = _dialect_from(args)
+    parts = [
+        str(arg) if isinstance(arg, Column) else _resolve_value(arg, dialect)
+        for arg in args
+    ]
+    return f"{ScalarFunctions.CONCAT}({', '.join(parts)})"
 
 
 def nullif(value1: Column | str | int, value2: Column | str | int):
@@ -123,9 +132,14 @@ def coalesce(*args: Column | str | int):
         return ExpressionColumn(
             f"{ScalarFunctions.COALESCE}({', '.join(arg.name for arg in args)})",
             args[0].table_name,
+            dialect=args[0]._dialect,
         )
-    args = [f"'{arg}'" if not isinstance(arg, Column) else str(arg) for arg in args]
-    return f"{ScalarFunctions.COALESCE}({', '.join(args)})"
+    dialect = _dialect_from(args)
+    parts = [
+        str(arg) if isinstance(arg, Column) else _resolve_value(arg, dialect)
+        for arg in args
+    ]
+    return f"{ScalarFunctions.COALESCE}({', '.join(parts)})"
 
 
 def acos(column: Column | str | int):

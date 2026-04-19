@@ -84,7 +84,13 @@ class Table(Query, AliasMixin):
         self._columns = columns_
         for column_name in columns_:
             setattr(
-                self, column_name, Column(column_name, self._alias or self.table_name)
+                self,
+                column_name,
+                Column(
+                    column_name,
+                    self._alias or self.table_name,
+                    dialect=self.dialect,
+                ),
             )
 
     def as_(self, alias: str) -> Self:

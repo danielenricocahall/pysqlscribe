@@ -11,20 +11,31 @@ from pysqlscribe.regex_patterns import (
 )
 
 
-def _resolve_value(value) -> str:
-    """Render a CASE/comparison value: columns become fqn, strings are quoted,
-    numbers pass through, and pre-rendered expressions stringify as-is."""
+@runtime_checkable
+class DialectLike(Protocol):
+    def escape_value(self, value) -> str: ...
+
+
+def _ansi_escape_value(value) -> str:
+    if isinstance(value, str):
+        return "'" + value.replace("'", "''") + "'"
+    if isinstance(value, (int, float)):
+        return str(value)
+    raise NotImplementedError(
+        f"Unsupported value type for SQL literal: {type(value).__name__}"
+    )
+
+
+def _resolve_value(value, dialect: DialectLike | None = None) -> str:
+    """Render a CASE/comparison value: columns become fqn, pre-built expressions
+    stringify as-is, and literals go through dialect escaping (ANSI fallback)."""
     if isinstance(value, Column):
         return value.fully_qualified_name
     if isinstance(value, Expression):
         return str(value)
-    if isinstance(value, str):
-        return f"'{value}'"
-    if isinstance(value, (int, float)):
-        return str(value)
-    raise NotImplementedError(
-        f"Unsupported value type for SQL expression: {type(value).__name__}"
-    )
+    if dialect is not None:
+        return dialect.escape_value(value)
+    return _ansi_escape_value(value)
 
 
 class Expression:
@@ -91,9 +102,15 @@ class Subqueryish(Protocol):
 
 
 class Column(AliasMixin):
-    def __init__(self, name: str, table_name: str):
+    def __init__(
+        self,
+        name: str,
+        table_name: str,
+        dialect: DialectLike | None = None,
+    ):
         self.name = name
         self.table_name = table_name
+        self._dialect = dialect
 
     @property
     def name(self):
@@ -119,10 +136,12 @@ class Column(AliasMixin):
             return Expression(
                 self.fully_qualified_name, operator, other.fully_qualified_name
             )
-        elif isinstance(other, str):
-            return Expression(self.fully_qualified_name, operator, f"'{other}'")
-        elif isinstance(other, (int, float)):
-            return Expression(self.fully_qualified_name, operator, str(other))
+        if isinstance(other, (str, int, float)):
+            return Expression(
+                self.fully_qualified_name,
+                operator,
+                _resolve_value(other, self._dialect),
+            )
         raise NotImplementedError(
             "Columns can only be compared to other columns or fixed string values"
         )
@@ -132,11 +151,13 @@ class Column(AliasMixin):
             return ExpressionColumn(
                 f"{self.fully_qualified_name} {operator} {other.fully_qualified_name}",
                 self.table_name,
+                dialect=self._dialect,
             )
-        else:
-            return ExpressionColumn(
-                f"{self.fully_qualified_name} {operator} {other}", self.table_name
-            )
+        return ExpressionColumn(
+            f"{self.fully_qualified_name} {operator} {other}",
+            self.table_name,
+            dialect=self._dialect,
+        )
 
     def _membership_expression(
         self, operator: str, other: Iterable[str | int | float] | Subqueryish
@@ -148,16 +169,16 @@ class Column(AliasMixin):
             raise NotImplementedError(
                 "membership expressions must be created with a non-empty iterable or a subquery"
             )
-        if all(isinstance(item, str) for item in other_list):
-            right_side = ", ".join(f"'{item}'" for item in other_list)
-            return Expression(self.fully_qualified_name, operator, f"({right_side})")
-        elif all(isinstance(item, (int, float)) for item in other_list):
-            right_side = ", ".join(str(item) for item in other_list)
-            return Expression(self.fully_qualified_name, operator, f"({right_side})")
-        else:
-            raise NotImplementedError(
-                "membership expressions must be created with an iterable containing items of the same type (all strings or all numbers); mixed types are not allowed"
+        if all(isinstance(item, str) for item in other_list) or all(
+            isinstance(item, (int, float)) for item in other_list
+        ):
+            right_side = ", ".join(
+                _resolve_value(item, self._dialect) for item in other_list
             )
+            return Expression(self.fully_qualified_name, operator, f"({right_side})")
+        raise NotImplementedError(
+            "membership expressions must be created with an iterable containing items of the same type (all strings or all numbers); mixed types are not allowed"
+        )
 
     def __str__(self):
         return self.name
@@ -198,18 +219,28 @@ class Column(AliasMixin):
             if ndigits is not None
             else f"{ScalarFunctions.ROUND}({self.name})"
         )
-        return ExpressionColumn(round_expr, self.table_name)
+        return ExpressionColumn(round_expr, self.table_name, dialect=self._dialect)
 
     def __abs__(self):
-        return ExpressionColumn(f"{ScalarFunctions.ABS}({self.name})", self.table_name)
+        return ExpressionColumn(
+            f"{ScalarFunctions.ABS}({self.name})",
+            self.table_name,
+            dialect=self._dialect,
+        )
 
     def __floor__(self):
         return ExpressionColumn(
-            f"{ScalarFunctions.FLOOR}({self.name})", self.table_name
+            f"{ScalarFunctions.FLOOR}({self.name})",
+            self.table_name,
+            dialect=self._dialect,
         )
 
     def __ceil__(self):
-        return ExpressionColumn(f"{ScalarFunctions.CEIL}({self.name})", self.table_name)
+        return ExpressionColumn(
+            f"{ScalarFunctions.CEIL}({self.name})",
+            self.table_name,
+            dialect=self._dialect,
+        )
 
     def in_(self, values: Iterable[str | int | float] | Subqueryish) -> Expression:
         return self._membership_expression("IN", values)
@@ -227,16 +258,8 @@ class Column(AliasMixin):
         return self._comparison_expression("ILIKE", pattern)
 
     def _between(self, low, high, operator) -> Expression:
-        def resolve_column_names(low):
-            if isinstance(low, Column):
-                return low.fully_qualified_name
-            elif isinstance(low, str):
-                return f"'{low}'"
-            elif isinstance(low, (int, float)):
-                return str(low)
-
-        low_expr = resolve_column_names(low)
-        high_expr = resolve_column_names(high)
+        low_expr = _resolve_value(low, self._dialect)
+        high_expr = _resolve_value(high, self._dialect)
         return Expression(
             self.fully_qualified_name, operator, f"{low_expr} AND {high_expr}"
         )

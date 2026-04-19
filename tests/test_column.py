@@ -227,3 +227,26 @@ def test_column_not_implemented():
     col = Column("column1", "table1")
     with pytest.raises(NotImplementedError):
         col == ["unsupported_type"]
+
+
+def test_standalone_column_ansi_quote_escape():
+    col = Column("name", "users")
+    assert str(col == "O'Brien") == "users.name = 'O''Brien'"
+
+
+def test_standalone_column_in_ansi_escape():
+    col = Column("name", "users")
+    assert (
+        str(col.in_(["O'Brien", "D'Angelo"]))
+        == "users.name IN ('O''Brien', 'D''Angelo')"
+    )
+
+
+def test_standalone_column_between_ansi_escape():
+    col = Column("name", "users")
+    assert str(col.between("A'a", "B'b")) == "users.name BETWEEN 'A''a' AND 'B''b'"
+
+
+def test_standalone_column_like_ansi_escape():
+    col = Column("name", "users")
+    assert str(col.like("%O'B%")) == "users.name LIKE '%O''B%'"

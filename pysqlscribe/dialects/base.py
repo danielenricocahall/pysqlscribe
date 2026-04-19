@@ -131,6 +131,16 @@ class Dialect(ABC):
     @abstractmethod
     def _escape_identifier(self, identifier: str): ...
 
+    def escape_value(self, value) -> str:
+        """Render a literal value as SQL, with dialect-appropriate escaping."""
+        if isinstance(value, str):
+            return "'" + value.replace("'", "''") + "'"
+        if isinstance(value, (int, float)):
+            return str(value)
+        raise NotImplementedError(
+            f"Unsupported value type for SQL literal: {type(value).__name__}"
+        )
+
     def normalize_identifiers_args(self, *args) -> str:
         arg = args[0]
         if isinstance(arg, str):
