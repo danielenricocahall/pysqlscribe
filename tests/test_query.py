@@ -2,7 +2,7 @@ from itertools import product
 
 import pytest
 
-from pysqlscribe.exceptions import InvalidJoinException
+from pysqlscribe.exceptions import InvalidJoinException, InvalidNodeException
 from pysqlscribe.ast.joins import JoinType
 from pysqlscribe.query import Query
 from pysqlscribe.renderers.base import UNION, EXCEPT, INTERSECT
@@ -355,3 +355,56 @@ def test_insert_returning_empty():
 def test_invalid_dialect():
     with pytest.raises(ValueError):
         Query("non-existent-dialect")
+
+
+@pytest.mark.parametrize("dialect", ["mysql", "sqlite"])
+def test_bare_offset_after_from_rejected(dialect):
+    with pytest.raises(InvalidNodeException):
+        Query(dialect).select("id").from_("t").offset(5).build()
+
+
+@pytest.mark.parametrize("dialect", ["mysql", "sqlite"])
+def test_bare_offset_after_union_rejected(dialect):
+    a = Query(dialect).select("id").from_("a")
+    b = Query(dialect).select("id").from_("b")
+    with pytest.raises(InvalidNodeException):
+        a.union(b).offset(5).build()
+
+
+def test_postgres_bare_offset_after_from():
+    query = Query("postgres").select("id").from_("t").offset(5).build()
+    assert query == 'SELECT "id" FROM "t" OFFSET 5'
+
+
+def test_postgres_bare_offset_after_union():
+    a = Query("postgres").select("id").from_("a")
+    b = Query("postgres").select("id").from_("b")
+    query = a.union(b).offset(5).build()
+    assert query == 'SELECT "id" FROM "a" UNION SELECT "id" FROM "b" OFFSET 5'
+
+
+@pytest.mark.parametrize("dialect", ["mysql", "sqlite", "postgres"])
+def test_post_union_order_limit_offset(dialect):
+    a = Query(dialect).select("id").from_("a")
+    b = Query(dialect).select("id").from_("b")
+    query = a.union(b).order_by("id").limit(10).offset(5).build()
+    esc = Query(dialect).dialect.escape_identifier
+    assert query == (
+        f"SELECT {esc('id')} FROM {esc('a')} "
+        f"UNION SELECT {esc('id')} FROM {esc('b')} "
+        f"ORDER BY {esc('id')} LIMIT 10 OFFSET 5"
+    )
+
+
+@pytest.mark.parametrize("dialect", ["mysql", "sqlite", "postgres"])
+def test_chained_union(dialect):
+    a = Query(dialect).select("id").from_("a")
+    b = Query(dialect).select("id").from_("b")
+    c = Query(dialect).select("id").from_("c")
+    query = a.union(b).union(c).build()
+    esc = Query(dialect).dialect.escape_identifier
+    assert query == (
+        f"SELECT {esc('id')} FROM {esc('a')} "
+        f"UNION SELECT {esc('id')} FROM {esc('b')} "
+        f"UNION SELECT {esc('id')} FROM {esc('c')}"
+    )
