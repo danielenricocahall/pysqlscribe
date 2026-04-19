@@ -66,6 +66,37 @@ def test_table_where_clause_other_column():
     )
 
 
+def test_table_where_is_null():
+    table = Table("test_table", "test_column", dialect="mysql")
+    query = table.select("test_column").where(table.test_column.is_null()).build()
+    assert (
+        query
+        == "SELECT `test_column` FROM `test_table` WHERE test_table.test_column IS NULL"
+    )
+
+
+def test_table_where_or_composition():
+    table = Table("test_table", "test_column", dialect="mysql")
+    query = (
+        table.select("test_column")
+        .where((table.test_column == 1) | (table.test_column == 2))
+        .build()
+    )
+    assert (
+        query == "SELECT `test_column` FROM `test_table` "
+        "WHERE (test_table.test_column = 1) OR (test_table.test_column = 2)"
+    )
+
+
+def test_table_where_not_is_null():
+    table = Table("test_table", "test_column", dialect="mysql")
+    query = table.select("test_column").where(~table.test_column.is_null()).build()
+    assert (
+        query
+        == "SELECT `test_column` FROM `test_table` WHERE NOT (test_table.test_column IS NULL)"
+    )
+
+
 def test_table_select_all():
     table = Table(
         "employee", "first_name", "last_name", "dept", "salary", dialect="postgres"

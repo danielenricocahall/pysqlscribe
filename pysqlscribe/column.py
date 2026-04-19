@@ -22,6 +22,42 @@ class Expression:
     def __repr__(self):
         return f"Expression({self.left!r}, {self.operator!r}, {self.right!r})"
 
+    def __and__(self, other: "Expression") -> "CompoundExpression":
+        return CompoundExpression(self, "AND", other)
+
+    def __or__(self, other: "Expression") -> "CompoundExpression":
+        return CompoundExpression(self, "OR", other)
+
+    def __invert__(self) -> "NotExpression":
+        return NotExpression(self)
+
+
+class CompoundExpression(Expression):
+    def __init__(self, left: Expression, operator: str, right: Expression):
+        self.left = left
+        self.operator = operator
+        self.right = right
+
+    def __str__(self):
+        return f"({self.left}) {self.operator} ({self.right})"
+
+    def __repr__(self):
+        return f"CompoundExpression({self.left!r}, {self.operator!r}, {self.right!r})"
+
+
+class NotExpression(Expression):
+    def __init__(self, inner: Expression):
+        self.inner = inner
+        self.left = "NOT"
+        self.operator = ""
+        self.right = inner
+
+    def __str__(self):
+        return f"NOT ({self.inner})"
+
+    def __repr__(self):
+        return f"NotExpression({self.inner!r})"
+
 
 class OrderedColumn:
     """A column paired with a sort direction, produced by Column.asc() or Column.desc()."""
@@ -174,6 +210,12 @@ class Column(AliasMixin):
 
     def not_between(self, low, high) -> Expression:
         return self._between(low, high, "NOT BETWEEN")
+
+    def is_null(self) -> Expression:
+        return Expression(self.fully_qualified_name, "IS", "NULL")
+
+    def is_not_null(self) -> Expression:
+        return Expression(self.fully_qualified_name, "IS NOT", "NULL")
 
     def _sort(self, direction: str) -> OrderedColumn:
         return OrderedColumn(self.name, direction)
