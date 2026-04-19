@@ -62,7 +62,6 @@ class Dialect(ABC):
                 UnionNode,
                 ExceptNode,
                 IntersectNode,
-                OffsetNode,
             ),
             JoinNode: (
                 WhereNode,
@@ -100,9 +99,27 @@ class Dialect(ABC):
                 ExceptNode,
                 IntersectNode,
             ),
-            UnionNode: (),
-            ExceptNode: (),
-            IntersectNode: (),
+            UnionNode: (
+                OrderByNode,
+                LimitNode,
+                UnionNode,
+                ExceptNode,
+                IntersectNode,
+            ),
+            ExceptNode: (
+                OrderByNode,
+                LimitNode,
+                UnionNode,
+                ExceptNode,
+                IntersectNode,
+            ),
+            IntersectNode: (
+                OrderByNode,
+                LimitNode,
+                UnionNode,
+                ExceptNode,
+                IntersectNode,
+            ),
             InsertNode: (ReturningNode,),
         }
 
