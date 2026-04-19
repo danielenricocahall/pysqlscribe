@@ -1,6 +1,6 @@
 from typing import Self
 
-from pysqlscribe.exceptions import DuplicateCTENameException, EmptyCTEException
+from pysqlscribe.exceptions import DuplicateCTENameError, EmptyCTEError
 from pysqlscribe.query import Query
 
 WITH = "WITH"
@@ -25,7 +25,7 @@ class With(Query):
 
     def build(self, clear: bool = True) -> str:
         if not self._subqueries:
-            raise EmptyCTEException(
+            raise EmptyCTEError(
                 f"No subqueries defined for WITH clause '{self._current_cte_name}'"
             )
         query = super().build(clear=clear)
@@ -38,7 +38,7 @@ class With(Query):
 
     def with_(self, cte_name: str) -> Self:
         if cte_name in self._subqueries:
-            raise DuplicateCTENameException(
+            raise DuplicateCTENameError(
                 f"CTE with name '{cte_name}' already exists in this context"
             )
         self._current_cte_name = cte_name

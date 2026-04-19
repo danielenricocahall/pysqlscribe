@@ -1,7 +1,7 @@
 from abc import ABC
 from typing import Self, Any
 
-from pysqlscribe.exceptions import InvalidNodeException, DialectValidationError
+from pysqlscribe.exceptions import InvalidNodeError, DialectValidationError
 from pysqlscribe.protocols import DialectProtocol
 
 
@@ -17,6 +17,6 @@ class Node(ABC):
         try:
             dialect.validate(self, next_)
         except DialectValidationError as e:
-            raise InvalidNodeException(f"{type(dialect).__name__}: {e}") from e
+            raise InvalidNodeError(f"{type(dialect).__name__}: {e}") from e
         next_.prev_ = self
         self.next_ = next_

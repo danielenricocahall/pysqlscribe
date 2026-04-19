@@ -1,7 +1,7 @@
 from typing import Self, Iterable, Protocol, runtime_checkable
 
 from pysqlscribe.alias import AliasMixin
-from pysqlscribe.exceptions import InvalidColumnNameException
+from pysqlscribe.exceptions import InvalidColumnsError
 from pysqlscribe.functions import ScalarFunctions
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
@@ -107,7 +107,7 @@ class Column(AliasMixin):
             or SCALAR_IDENTIFIER_REGEX.match(column_name)
             or EXPRESSION_IDENTIFIER_REGEX.match(column_name)
         ):
-            raise InvalidColumnNameException(f"Invalid column name {column_name}")
+            raise InvalidColumnsError(f"Invalid column name {column_name}")
         self._name = column_name
 
     @property

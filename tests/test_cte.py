@@ -2,7 +2,7 @@ import pytest
 
 from pysqlscribe.aggregate_functions import avg
 from pysqlscribe.cte import With, with_
-from pysqlscribe.exceptions import DuplicateCTENameException, EmptyCTEException
+from pysqlscribe.exceptions import DuplicateCTENameError, EmptyCTEError
 from pysqlscribe.query import Query
 
 
@@ -70,14 +70,14 @@ def test_duplicate_cte_fails():
     query_builder.select("department", avg("salary")).from_("employees").group_by(
         "department"
     )
-    with pytest.raises(DuplicateCTENameException):
+    with pytest.raises(DuplicateCTENameError):
         With("AvgSalaryByDepartment", dialect="postgres").as_(query_builder).with_(
             "AvgSalaryByDepartment"
         ).as_(query_builder).select("*").build()
 
 
 def test_empty_cte_fails():
-    with pytest.raises(EmptyCTEException):
+    with pytest.raises(EmptyCTEError):
         With("AvgSalaryByDepartment", dialect="postgres").build()
 
 

@@ -3,7 +3,7 @@ from pysqlscribe.column import (
     Column,
     CompoundExpression,
     Expression,
-    InvalidColumnNameException,
+    InvalidColumnsError,
     ExpressionColumn,
     NotExpression,
     case_,
@@ -19,7 +19,7 @@ def test_valid_column_initialization():
 
 
 def test_invalid_column_name():
-    with pytest.raises(InvalidColumnNameException):
+    with pytest.raises(InvalidColumnsError):
         Column("invalid column!", "test_table")
 
 

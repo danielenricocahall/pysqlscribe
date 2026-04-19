@@ -4,7 +4,7 @@ from typing import List, Self
 
 from pysqlscribe.alias import AliasMixin
 from pysqlscribe.column import Column
-from pysqlscribe.exceptions import InvalidTableNameException
+from pysqlscribe.exceptions import InvalidTableNameError
 from pysqlscribe.ast.joins import JoinType
 from pysqlscribe.query import Query
 from pysqlscribe.regex_patterns import (
@@ -66,7 +66,7 @@ class Table(Query, AliasMixin):
     @table_name.setter
     def table_name(self, table_name_: str):
         if not VALID_IDENTIFIER_REGEX.match(table_name_):
-            raise InvalidTableNameException(f"Invalid table name {table_name_}")
+            raise InvalidTableNameError(f"Invalid table name {table_name_}")
         self._table_name = table_name_
         if getattr(self, "_columns", None):
             # ensure that we re-assign our column attributes with the correct fully qualified name

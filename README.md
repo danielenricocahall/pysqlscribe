@@ -451,7 +451,9 @@ WITH RECURSIVE EmployeePaths AS (
         ) SELECT * FROM `EmployeePaths` ORDER BY `level`
 ```
 
-## Inserts
+## Inserts 
+ > Note: Insert capabilities deprecated as of 1.0.0.
+
 While the primary focus of this library is on building retrieval (`"SELECT"`) queries, you can also build `INSERT` queries:
 
 ```python
