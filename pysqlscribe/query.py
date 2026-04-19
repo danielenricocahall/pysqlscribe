@@ -63,22 +63,22 @@ class Query:
         self.node = self.node.next_
         return self
 
-    def inner_join(self, table: str, condition: str):
+    def inner_join(self, table: str, condition: str) -> Self:
         return self.join(table, JoinType.INNER, condition)
 
-    def outer_join(self, table: str, condition: str):
+    def outer_join(self, table: str, condition: str) -> Self:
         return self.join(table, JoinType.OUTER, condition)
 
-    def left_join(self, table: str, condition: str):
+    def left_join(self, table: str, condition: str) -> Self:
         return self.join(table, JoinType.LEFT, condition)
 
-    def right_join(self, table: str, condition: str):
+    def right_join(self, table: str, condition: str) -> Self:
         return self.join(table, JoinType.RIGHT, condition)
 
-    def cross_join(self, table: str):
+    def cross_join(self, table: str) -> Self:
         return self.join(table, JoinType.CROSS)
 
-    def natural_join(self, table: str):
+    def natural_join(self, table: str) -> Self:
         return self.join(table, JoinType.NATURAL)
 
     def where(self, *args) -> Self:
