@@ -54,7 +54,7 @@ class Query:
         warnings.warn(
             "`insert` capabilities will be removed in 1.0.0.`",
             DeprecationWarning,
-            stacklevel=2,
+            stacklevel=3,
         )
         table = kwargs.get("into")
         values = kwargs.get("values")
