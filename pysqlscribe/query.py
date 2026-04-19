@@ -82,9 +82,11 @@ class Query:
         return self.join(table, JoinType.NATURAL)
 
     def where(self, *args) -> Self:
-        where_node = WhereNode({"conditions": list(args)})
-        self.node.add(where_node, self.dialect)
-        self.node = self.node.next_
+        if isinstance(self.node, WhereNode):
+            self.node.state["conditions"].extend(args)
+        else:
+            self.node.add(WhereNode({"conditions": list(args)}), self.dialect)
+            self.node = self.node.next_
         return self
 
     def order_by(self, *args) -> Self:
@@ -114,9 +116,11 @@ class Query:
         return self
 
     def having(self, *args) -> Self:
-        having_node = HavingNode({"conditions": list(args)})
-        self.node.add(having_node, self.dialect)
-        self.node = self.node.next_
+        if isinstance(self.node, HavingNode):
+            self.node.state["conditions"].extend(args)
+        else:
+            self.node.add(HavingNode({"conditions": list(args)}), self.dialect)
+            self.node = self.node.next_
         return self
 
     def union(self, query: Self | str, all_: bool = False) -> Self:

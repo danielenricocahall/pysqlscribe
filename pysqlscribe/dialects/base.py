@@ -72,7 +72,6 @@ class Dialect(ABC):
                 IntersectNode,
             ),
             WhereNode: (
-                WhereNode,
                 GroupByNode,
                 OrderByNode,
                 LimitNode,
