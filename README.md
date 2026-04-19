@@ -410,7 +410,7 @@ SELECT * FROM `employees` WHERE employees.department_id IN (SELECT `id` FROM `de
 
 ## Common Table Expressions (CTEs)
 
-CTEs can be built using the `With` API (using the both the class and the functional wrapper). `Query` objects, (and by extension, `Table` objects) are provided as the subquery:
+CTEs (both regular and recursive) can be built using the `With` API (using the both the class and the functional wrapper). `Query` objects, (and by extension, `Table` objects) are provided as the subquery:
 ```python
 from pysqlscribe.table import Table
 from pysqlscribe.cte import with_
