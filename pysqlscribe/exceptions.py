@@ -26,3 +26,7 @@ class DuplicateCTENameError(PySQLScribeError): ...
 
 
 class EmptyCTEError(PySQLScribeError): ...
+
+
+class InvalidPathError(PySQLScribeError):
+    """Custom exception for cases where a path not containing '.sql' files is provided"""
