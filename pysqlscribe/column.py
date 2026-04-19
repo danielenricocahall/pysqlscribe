@@ -287,6 +287,9 @@ class Column(AliasMixin):
     def desc(self) -> "OrderedColumn":
         return self._sort("DESC")
 
+    def _identifier_body(self, dialect) -> str:
+        return dialect.escape_identifier(self.name)
+
 
 class ExpressionColumn(Column):
     """Representation of a column that is the result of an arithmetic operation. Main benefit is to ensure the
@@ -294,6 +297,9 @@ class ExpressionColumn(Column):
 
     @property
     def fully_qualified_name(self):
+        return self.name
+
+    def _identifier_body(self, dialect) -> str:
         return self.name
 
 
@@ -329,6 +335,9 @@ class Case(AliasMixin):
 
     def __str__(self) -> str:
         return self.expression + self.alias
+
+    def _identifier_body(self, dialect) -> str:
+        return self.expression
 
 
 def case_() -> Case:

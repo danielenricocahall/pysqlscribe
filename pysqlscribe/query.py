@@ -155,3 +155,6 @@ class Query(AliasMixin):
     def enable_escape_identifiers(self):
         self.dialect.escape_identifiers_enabled = True
         return self
+
+    def _identifier_body(self, dialect):
+        return f"({str(self)})"

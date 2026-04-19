@@ -19,12 +19,6 @@ from pysqlscribe.ast.nodes import (
 )
 from pysqlscribe.env_utils import str2bool
 from pysqlscribe.exceptions import DialectValidationError
-from pysqlscribe.protocols import (
-    Subqueryish,
-    ColumnProtocol,
-    CaseProtocol,
-    TableProtocol,
-)
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
     AGGREGATE_IDENTIFIER_REGEX,
@@ -147,50 +141,11 @@ class Dialect(ABC):
         if not isinstance(arg, (list, tuple)):
             arg = [arg]
         identifiers = []
-        for unnormalized_identifier in arg:
-            if isinstance(unnormalized_identifier, ColumnProtocol):
-                column_identifier = self.validate_identifier(
-                    unnormalized_identifier.name
-                )
-                identifier = (
-                    f"{column_identifier}{unnormalized_identifier.alias}"
-                    if unnormalized_identifier.alias
-                    else column_identifier
-                )
-                identifiers.append(identifier)
-            elif isinstance(unnormalized_identifier, CaseProtocol):
-                case_identifier = self.validate_identifier(
-                    unnormalized_identifier.expression
-                )
-                identifier = (
-                    f"{case_identifier}{unnormalized_identifier.alias}"
-                    if unnormalized_identifier.alias
-                    else case_identifier
-                )
-                identifiers.append(identifier)
-            elif isinstance(unnormalized_identifier, TableProtocol):
-                table_identifier = self.validate_identifier(
-                    unnormalized_identifier.table_name
-                )
-                identifier = (
-                    f"{table_identifier}{unnormalized_identifier.alias}"
-                    if unnormalized_identifier.alias
-                    else f"{table_identifier}"
-                )
-                identifiers.append(identifier)
-            elif isinstance(unnormalized_identifier, Subqueryish):
-                # TODO clunky, also should revisit if we can propagate columns in here to avoid that alias regex above
-                identifier = str(unnormalized_identifier).strip()
-
-                identifier = (
-                    f"({identifier}){unnormalized_identifier.alias}"
-                    if unnormalized_identifier.alias
-                    else f"({identifier})"
-                )
-                identifiers.append(identifier)
+        for identifier in arg:
+            if hasattr(identifier, "to_identifier_sql"):
+                identifiers.append(identifier.to_identifier_sql(self))
             else:
-                identifier = str(unnormalized_identifier).strip()
-                identifiers.append(self.validate_identifier(identifier))
+                identifiers.append(self.validate_identifier(str(identifier).strip()))
 
         return ", ".join(identifiers)
 
