@@ -322,8 +322,24 @@ Output:
 SELECT "first_name" AS name FROM "employee" AS e
 ```
 
-## NULL Checks and Boolean Composition
-Columns support `is_null()` / `is_not_null()`, and `Expression`s can be combined with `&` (AND), `|` (OR), and `~` (NOT). Child expressions are parenthesized so precedence is explicit:
+## NULL Checks
+Columns support `is_null()` and `is_not_null()` for NULL comparisons:
+
+```python
+from pysqlscribe.table import Table
+
+table = Table("employees", "salary", "bonus", dialect="postgres")
+query = table.select("salary").where(table.bonus.is_null()).build()
+```
+
+Output:
+
+```postgresql
+SELECT "salary" FROM "employees" WHERE employees.bonus IS NULL
+```
+
+## Boolean Composition
+`Expression`s can be combined with `&` (AND), `|` (OR), and `~` (NOT). Child expressions are parenthesized so precedence is explicit:
 
 ```python
 from pysqlscribe.table import Table
