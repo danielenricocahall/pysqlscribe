@@ -2,7 +2,7 @@ from itertools import product
 
 import pytest
 
-from pysqlscribe.exceptions import InvalidJoinException, InvalidNodeException
+from pysqlscribe.exceptions import InvalidJoinError, InvalidNodeError
 from pysqlscribe.ast.joins import JoinType
 from pysqlscribe.query import Query
 from pysqlscribe.renderers.base import UNION, EXCEPT, INTERSECT
@@ -145,7 +145,7 @@ def test_joins_no_condition(join_type: JoinType):
 
 def test_invalid_join():
     query_builder = Query("oracle")
-    with pytest.raises(InvalidJoinException):
+    with pytest.raises(InvalidJoinError):
         query_builder.select("employee_id", "store_location").from_("employees").join(
             "payroll", JoinType.NATURAL, "employees.payroll_id = payroll.id"
         )
@@ -359,7 +359,7 @@ def test_invalid_dialect():
 
 @pytest.mark.parametrize("dialect", ["mysql", "sqlite"])
 def test_bare_offset_after_from_rejected(dialect):
-    with pytest.raises(InvalidNodeException):
+    with pytest.raises(InvalidNodeError):
         Query(dialect).select("id").from_("t").offset(5).build()
 
 
@@ -367,7 +367,7 @@ def test_bare_offset_after_from_rejected(dialect):
 def test_bare_offset_after_union_rejected(dialect):
     a = Query(dialect).select("id").from_("a")
     b = Query(dialect).select("id").from_("b")
-    with pytest.raises(InvalidNodeException):
+    with pytest.raises(InvalidNodeError):
         a.union(b).offset(5).build()
 
 

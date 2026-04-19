@@ -2,7 +2,7 @@ from abc import ABC
 
 from pysqlscribe.ast.base import Node
 from pysqlscribe.ast.joins import JoinType
-from pysqlscribe.exceptions import InvalidJoinException
+from pysqlscribe.exceptions import InvalidJoinError
 
 
 class SelectNode(Node): ...
@@ -20,7 +20,7 @@ class JoinNode(Node):
             JoinType.NATURAL,
             JoinType.CROSS,
         ):
-            raise InvalidJoinException(
+            raise InvalidJoinError(
                 "Conditions need to be supplied for any join which is not NATURAL or CROSS"
             )
         self.condition = condition

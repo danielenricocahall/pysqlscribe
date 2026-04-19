@@ -1,7 +1,7 @@
 import os
 from typing import List
 
-from pysqlscribe.exceptions import InvalidSchemaNameException
+from pysqlscribe.exceptions import InvalidSchemaNameError
 from pysqlscribe.regex_patterns import VALID_IDENTIFIER_REGEX
 from pysqlscribe.table import Table
 
@@ -24,7 +24,7 @@ class Schema:
     @name.setter
     def name(self, schema_name: str):
         if not VALID_IDENTIFIER_REGEX.match(schema_name):
-            raise InvalidSchemaNameException(f"Invalid schema name {schema_name}")
+            raise InvalidSchemaNameError(f"Invalid schema name {schema_name}")
         self._name = schema_name
 
     @property
