@@ -79,3 +79,41 @@ def test_duplicate_cte_fails():
 def test_empty_cte_fails():
     with pytest.raises(EmptyCTEException):
         With("AvgSalaryByDepartment", dialect="postgres").build()
+
+
+def test_recursive_cte():
+    from pysqlscribe.table import Table
+
+    # Anchor: top-level employees whose manager_id IS NULL.
+    employees = Table("employees", "employee_id", "name", "manager_id", dialect="mysql")
+    anchor = employees.select("employee_id", "name", "manager_id", "1 AS level").where(
+        employees.manager_id.is_null()
+    )
+
+    # Recursive: join employees (aliased e) with the CTE (aliased ep).
+    e = Table("employees", "employee_id", "name", "manager_id", dialect="mysql").as_(
+        "e"
+    )
+    ep = Table("EmployeePaths", "employee_id", "level", dialect="mysql").as_("ep")
+    recursive = e.select(
+        e.employee_id, e.name, e.manager_id, (ep.level + 1).as_("level")
+    ).join(ep, condition=(e.manager_id == ep.employee_id))
+
+    cte_query = (
+        with_("EmployeePaths", dialect="mysql", recursive=True)
+        .as_(anchor.union(recursive, all_=True))
+        .select("*")
+        .from_("EmployeePaths")
+        .order_by("level")
+        .build()
+    )
+    assert cte_query == (
+        "WITH RECURSIVE EmployeePaths AS ("
+        "SELECT `employee_id`, `name`, `manager_id`, 1 AS level "
+        "FROM `employees` WHERE employees.manager_id IS NULL "
+        "UNION ALL "
+        "SELECT `employee_id`, `name`, `manager_id`, ep.level + 1 AS level "
+        "FROM `employees` AS e "
+        "INNER JOIN `EmployeePaths` AS ep ON e.manager_id = ep.employee_id"
+        ") SELECT * FROM `EmployeePaths` ORDER BY `level`"
+    )
