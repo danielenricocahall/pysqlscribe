@@ -15,3 +15,28 @@ class DialectProtocol(Protocol):
 class Subqueryish(Protocol):
     @property
     def select(self) -> Self: ...
+
+
+@runtime_checkable
+class TableProtocol(Protocol):
+    @property
+    def columns(self): ...
+
+
+@runtime_checkable
+class ColumnProtocol(Protocol):
+    @property
+    def fully_qualified_name(self) -> str: ...
+
+    @property
+    def alias(self) -> str: ...
+
+
+@runtime_checkable
+class CaseProtocol(Protocol):
+    def else_(self): ...
+
+    def when(self): ...
+
+    @property
+    def expression(self) -> str: ...

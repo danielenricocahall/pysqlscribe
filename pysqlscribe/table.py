@@ -20,17 +20,9 @@ class Table(Query, AliasMixin):
         self.columns = columns
 
     def select(self, *columns) -> Self:
-        columns = [
-            f"{column.name}{column.alias}" if isinstance(column, Column) else column
-            for column in columns
-        ]
-        table_name = f"{self.table_name}{self.alias}"
-        return super().select(*columns).from_(table_name)
+        return super().select(*columns).from_(self)
 
     def order_by(self, *columns) -> Self:
-        columns = [
-            column.name if isinstance(column, Column) else column for column in columns
-        ]
         return super().order_by(*columns)
 
     def group_by(self, *columns) -> Self:
@@ -45,8 +37,6 @@ class Table(Query, AliasMixin):
         join_type: str = JoinType.INNER,
         condition: str | None = None,
     ) -> Self:
-        if isinstance(table, Table):
-            table = f"{table.table_name}{table.alias}"
         return super().join(table, join_type, condition)
 
     @property

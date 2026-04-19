@@ -19,15 +19,19 @@ from pysqlscribe.ast.nodes import (
 )
 from pysqlscribe.env_utils import str2bool
 from pysqlscribe.exceptions import DialectValidationError
-from pysqlscribe.protocols import Subqueryish
+from pysqlscribe.protocols import (
+    Subqueryish,
+    ColumnProtocol,
+    CaseProtocol,
+    TableProtocol,
+)
 from pysqlscribe.regex_patterns import (
-    ALIAS_SPLIT_REGEX,
     VALID_IDENTIFIER_REGEX,
     AGGREGATE_IDENTIFIER_REGEX,
     SCALAR_IDENTIFIER_REGEX,
     EXPRESSION_IDENTIFIER_REGEX,
     CASE_IDENTIFIER_REGEX,
-    ALIAS_REGEX,
+    ALIAS_SPLIT_REGEX,
 )
 from pysqlscribe.renderers.base import Renderer
 
@@ -140,23 +144,44 @@ class Dialect(ABC):
 
     def normalize_identifiers_args(self, *args) -> str:
         arg = args[0]
-        if isinstance(arg, str):
+        if not isinstance(arg, (list, tuple)):
             arg = [arg]
         identifiers = []
-
         for unnormalized_identifier in arg:
-            identifier = str(unnormalized_identifier).strip()
-
-            if len(parts := ALIAS_SPLIT_REGEX.split(identifier, maxsplit=1)) == 2:
-                base, alias = parts[0].strip(), parts[1].strip()
-
-                identifier = self.validate_identifier(base)
-                if not ALIAS_REGEX.match(alias):
-                    raise ValueError(f"Invalid SQL alias: {alias}")
-
-                identifiers.append(f"{identifier} AS {alias}")
+            if isinstance(unnormalized_identifier, ColumnProtocol):
+                column_identifier = self.validate_identifier(
+                    unnormalized_identifier.name
+                )
+                identifier = (
+                    f"{column_identifier}{unnormalized_identifier.alias}"
+                    if unnormalized_identifier.alias
+                    else column_identifier
+                )
+                identifiers.append(identifier)
+            elif isinstance(unnormalized_identifier, CaseProtocol):
+                case_identifier = self.validate_identifier(
+                    unnormalized_identifier.expression
+                )
+                identifier = (
+                    f"{case_identifier}{unnormalized_identifier.alias}"
+                    if unnormalized_identifier.alias
+                    else case_identifier
+                )
+                identifiers.append(identifier)
+            elif isinstance(unnormalized_identifier, TableProtocol):
+                table_identifier = self.validate_identifier(
+                    unnormalized_identifier.table_name
+                )
+                identifier = (
+                    f"{table_identifier}{unnormalized_identifier.alias}"
+                    if unnormalized_identifier.alias
+                    else f"{table_identifier}"
+                )
+                identifiers.append(identifier)
             elif isinstance(unnormalized_identifier, Subqueryish):
                 # TODO clunky, also should revisit if we can propagate columns in here to avoid that alias regex above
+                identifier = str(unnormalized_identifier).strip()
+
                 identifier = (
                     f"({identifier}){unnormalized_identifier.alias}"
                     if unnormalized_identifier.alias
@@ -164,6 +189,7 @@ class Dialect(ABC):
                 )
                 identifiers.append(identifier)
             else:
+                identifier = str(unnormalized_identifier).strip()
                 identifiers.append(self.validate_identifier(identifier))
 
         return ", ".join(identifiers)
@@ -178,6 +204,10 @@ class Dialect(ABC):
             or CASE_IDENTIFIER_REGEX.match(identifier)
         ):
             identifier = identifier
+        elif len(parts := ALIAS_SPLIT_REGEX.split(identifier, maxsplit=1)) == 2:
+            base, alias = parts[0].strip(), parts[1].strip()
+            identifier = self.validate_identifier(base)
+            identifier = f"{identifier} AS {alias}"
         else:
             raise ValueError(f"Invalid SQL identifier: {identifier}")
         return identifier

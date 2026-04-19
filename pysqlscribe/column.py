@@ -315,7 +315,8 @@ class Case(AliasMixin):
         self._else = value
         return self
 
-    def __str__(self) -> str:
+    @property
+    def expression(self):
         if not self._whens:
             raise ValueError("CASE requires at least one WHEN clause")
         parts = ["CASE"]
@@ -324,7 +325,10 @@ class Case(AliasMixin):
         if self._else is not _UNSET:
             parts.append(f"ELSE {_resolve_value(self._else)}")
         parts.append("END")
-        return " ".join(parts) + self.alias
+        return " ".join(parts)
+
+    def __str__(self) -> str:
+        return self.expression + self.alias
 
 
 def case_() -> Case:
