@@ -407,6 +407,50 @@ Output:
 ```mysql
 SELECT * FROM `employees` WHERE employees.department_id IN (SELECT `id` FROM `departments` WHERE departments.name = 'Engineering')
 ```
+
+## Common Table Expressions (CTEs)
+
+CTEs (both regular and recursive) can be built using the `With` API (using the both the class and the functional wrapper). `Query` objects, (and by extension, `Table` objects) are provided as the subquery:
+```python
+from pysqlscribe.table import Table
+from pysqlscribe.cte import with_
+
+employees = Table("employees", "employee_id", "name", "manager_id", dialect="mysql")
+anchor = employees.select("employee_id", "name", "manager_id", "1 AS level").where(
+    employees.manager_id.is_null()
+)
+
+e = Table("employees", "employee_id", "name", "manager_id", dialect="mysql").as_(
+    "e"
+)
+ep = Table("EmployeePaths", "employee_id", "level", dialect="mysql").as_("ep")
+recursive = e.select(
+    e.employee_id, e.name, e.manager_id, (ep.level + 1).as_("level")
+).join(ep, condition=(e.manager_id == ep.employee_id))
+
+cte_query = (
+    with_("EmployeePaths", dialect="mysql", recursive=True)
+    .as_(anchor.union(recursive, all_=True))
+    .select("*")
+    .from_("EmployeePaths")
+    .order_by("level")
+    .build()
+)
+```
+
+Output:
+
+```mysql
+WITH RECURSIVE EmployeePaths AS (
+        SELECT `employee_id`, `name`, `manager_id`, 1 AS level 
+        FROM `employees` WHERE employees.manager_id IS NULL 
+        UNION ALL 
+        SELECT `employee_id`, `name`, `manager_id`, ep.level + 1 AS level 
+        FROM `employees` AS e 
+        INNER JOIN `EmployeePaths` AS ep ON e.manager_id = ep.employee_id
+        ) SELECT * FROM `EmployeePaths` ORDER BY `level`
+```
+
 ## Inserts
 While the primary focus of this library is on building retrieval (`"SELECT"`) queries, you can also build `INSERT` queries:
 
