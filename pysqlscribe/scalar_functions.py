@@ -65,7 +65,7 @@ def reverse(column: Column | str):
 
 
 def round_(column: Column | str, decimals: int | None = None):
-    if not decimals:
+    if decimals is None:
         return _scalar_function(ScalarFunctions.ROUND, column)
     if not isinstance(column, Column):
         return f"{ScalarFunctions.ROUND}({column}, {decimals})"
