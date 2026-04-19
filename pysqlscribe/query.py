@@ -13,7 +13,6 @@ from pysqlscribe.ast.nodes import (
     HavingNode,
     OrderByNode,
     WhereNode,
-    ReturningNode,
     UnionNode,
     LimitNode,
 )
@@ -45,11 +44,6 @@ class Query:
             FromNode({"tables": list(args)}),
             self.dialect,
         )
-        self.node = self.node.next_
-        return self
-
-    def returning(self, *args) -> Self:
-        self.node.add(ReturningNode({"columns": list(args)}), self.dialect)
         self.node = self.node.next_
         return self
 

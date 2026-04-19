@@ -16,8 +16,6 @@ from pysqlscribe.ast.nodes import (
     HavingNode,
     OffsetNode,
     SelectNode,
-    InsertNode,
-    ReturningNode,
 )
 from pysqlscribe.env_utils import str2bool
 from pysqlscribe.exceptions import DialectValidationError
@@ -120,7 +118,6 @@ class Dialect(ABC):
                 ExceptNode,
                 IntersectNode,
             ),
-            InsertNode: (ReturningNode,),
         }
 
     def escape_identifier(self, identifier: str):
