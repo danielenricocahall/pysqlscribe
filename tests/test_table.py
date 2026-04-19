@@ -285,3 +285,35 @@ def test_order_by_plain_string_unchanged():
     table = Table("test_table", "cost", "name", dialect="sqlite")
     query = table.select("*").order_by("cost").build()
     assert query == 'SELECT * FROM "test_table" ORDER BY "cost"'
+
+
+@pytest.mark.parametrize("dialect", ["postgres", "sqlite", "oracle"])
+def test_table_escapes_embedded_single_quote(dialect):
+    table = Table("users", "name", dialect=dialect)
+    query = table.select("*").where(table.name == "O'Brien").build()
+    assert "users.name = 'O''Brien'" in query
+
+
+def test_table_escapes_injection_attempt():
+    table = Table("users", "name", dialect="postgres")
+    query = table.select("*").where(table.name == "' OR 1=1; --").build()
+    assert query == "SELECT * FROM \"users\" WHERE users.name = ''' OR 1=1; --'"
+
+
+def test_mysql_escapes_backslash_and_quote():
+    table = Table("files", "path", dialect="mysql")
+    query = table.select("*").where(table.path == "C:\\f'ile").build()
+    assert query == "SELECT * FROM `files` WHERE files.path = 'C:\\\\f''ile'"
+
+
+def test_mysql_escapes_in_list():
+    table = Table("files", "path", dialect="mysql")
+    query = table.select("*").where(table.path.in_(["a\\b", "c'd"])).build()
+    assert query == "SELECT * FROM `files` WHERE files.path IN ('a\\\\b', 'c''d')"
+
+
+def test_table_column_carries_dialect():
+    table = Table("users", "name", dialect="mysql")
+    # The Column attribute should carry the MySQL dialect so comparisons escape
+    # backslashes in addition to quotes.
+    assert str(table.name == "a\\b") == "users.name = 'a\\\\b'"

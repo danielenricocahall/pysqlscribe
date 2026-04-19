@@ -114,10 +114,10 @@ def test_concat():
     assert query == "SELECT CONCAT(salary, 'USD') FROM \"payroll\""
 
     query = payroll_table.select(concat(payroll_table.salary, 100)).build()
-    assert query == "SELECT CONCAT(salary, '100') FROM \"payroll\""
+    assert query == 'SELECT CONCAT(salary, 100) FROM "payroll"'
 
     query = payroll_table.select(concat("USD", 100)).build()
-    assert query == "SELECT CONCAT('USD', '100') FROM \"payroll\""
+    assert query == "SELECT CONCAT('USD', 100) FROM \"payroll\""
 
 
 def test_concat_with_columns():
