@@ -371,3 +371,13 @@ def test_subquery():
         query
         == "SELECT * FROM (SELECT `department`, AVG(salary) FROM `employees` GROUP BY `department`) AS aggregated_employees"
     )
+
+
+def test_raw_string_alias_rejects_injection():
+    with pytest.raises(ValueError, match="Invalid SQL alias"):
+        Query("postgres").select("col AS bad; DROP TABLE users").from_("t").build()
+
+
+def test_raw_string_alias_accepts_valid():
+    query = Query("postgres").select("col AS total").from_("t").build()
+    assert query == 'SELECT "col" AS total FROM "t"'

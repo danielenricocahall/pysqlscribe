@@ -25,6 +25,7 @@ from pysqlscribe.regex_patterns import (
     SCALAR_IDENTIFIER_REGEX,
     EXPRESSION_IDENTIFIER_REGEX,
     CASE_IDENTIFIER_REGEX,
+    ALIAS_REGEX,
     ALIAS_SPLIT_REGEX,
 )
 from pysqlscribe.renderers.base import Renderer
@@ -161,6 +162,8 @@ class Dialect(ABC):
             identifier = identifier
         elif len(parts := ALIAS_SPLIT_REGEX.split(identifier, maxsplit=1)) == 2:
             base, alias = parts[0].strip(), parts[1].strip()
+            if not ALIAS_REGEX.match(alias):
+                raise ValueError(f"Invalid SQL alias: {alias}")
             identifier = self.validate_identifier(base)
             identifier = f"{identifier} AS {alias}"
         else:
