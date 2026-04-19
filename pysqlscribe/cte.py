@@ -45,5 +45,5 @@ class With(Query):
         return self
 
 
-def with_(cte_name: str, dialect: str, recursive: bool = False):
+def with_(cte_name: str, dialect: str, recursive: bool = False) -> With:
     return With(cte_name, dialect, recursive)
