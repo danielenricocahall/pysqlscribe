@@ -1,8 +1,10 @@
 from pysqlscribe.column import (
     Column,
+    CompoundExpression,
     Expression,
     InvalidColumnNameException,
     ExpressionColumn,
+    NotExpression,
 )
 import pytest
 
@@ -113,6 +115,57 @@ def test_combined_column_fqn():
     col2 = Column("column2", "table2")
     combined = col1 + col2
     assert combined.fully_qualified_name == "table1.column1 + table2.column2"
+
+
+def test_column_is_null():
+    col = Column("column1", "table1")
+    expr = col.is_null()
+    assert isinstance(expr, Expression)
+    assert str(expr) == "table1.column1 IS NULL"
+
+
+def test_column_is_not_null():
+    col = Column("column1", "table1")
+    expr = col.is_not_null()
+    assert isinstance(expr, Expression)
+    assert str(expr) == "table1.column1 IS NOT NULL"
+
+
+def test_expression_and():
+    col = Column("column1", "table1")
+    expr = (col == 1) & (col > 5)
+    assert isinstance(expr, CompoundExpression)
+    assert str(expr) == "(table1.column1 = 1) AND (table1.column1 > 5)"
+
+
+def test_expression_or():
+    col = Column("column1", "table1")
+    expr = (col == 1) | (col == 2)
+    assert isinstance(expr, CompoundExpression)
+    assert str(expr) == "(table1.column1 = 1) OR (table1.column1 = 2)"
+
+
+def test_expression_not():
+    col = Column("column1", "table1")
+    expr = ~col.is_null()
+    assert isinstance(expr, NotExpression)
+    assert str(expr) == "NOT (table1.column1 IS NULL)"
+
+
+def test_expression_mixed_precedence():
+    col = Column("column1", "table1")
+    other = Column("column2", "table1")
+    expr = (col == 1) & ((other > 5) | other.is_null())
+    assert (
+        str(expr)
+        == "(table1.column1 = 1) AND ((table1.column2 > 5) OR (table1.column2 IS NULL))"
+    )
+
+
+def test_expression_not_compound():
+    col = Column("column1", "table1")
+    expr = ~((col == 1) | (col == 2))
+    assert str(expr) == "NOT ((table1.column1 = 1) OR (table1.column1 = 2))"
 
 
 def test_column_not_implemented():
