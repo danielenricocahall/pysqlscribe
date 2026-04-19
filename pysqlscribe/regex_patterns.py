@@ -40,6 +40,12 @@ EXPRESSION_IDENTIFIER_REGEX = re.compile(
     rf"^\s*{TERM_REGEX}(?:\s*[\+\-\*/]\s*{TERM_REGEX})*\s*$"
 )
 
+# CASE expressions are produced by the builder so their internals are trusted;
+# this check only confirms the outer shape.
+CASE_IDENTIFIER_REGEX = re.compile(
+    r"^\s*CASE\s+WHEN\b.+\bEND\s*$", re.IGNORECASE | re.DOTALL
+)
+
 CONSTRAINT_PREFIX_REGEX = r"^(PRIMARY|FOREIGN|CONSTRAINT|UNIQUE|INDEX)"
 
 ALIAS_REGEX = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")

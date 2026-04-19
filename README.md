@@ -360,6 +360,36 @@ SELECT * FROM "employees" WHERE (employees.salary > 1000) OR (employees.bonus IS
 
 Note: Python's `&` / `|` / `~` have higher precedence than comparison operators, so wrap each comparison in parentheses: `(col == 1) | (col == 2)`.
 
+## CASE Expressions
+`case_()` builds `CASE WHEN ... THEN ... [ELSE ...] END` expressions. Chain `.when(condition, value)` for each branch, `.else_(value)` for the default, and `.as_(alias)` for an alias. Values can be columns, strings (auto-quoted), or numbers.
+
+```python
+from pysqlscribe.column import case_
+from pysqlscribe.table import Table
+
+table = Table("employees", "dept", "salary", dialect="postgres")
+band = (
+    case_()
+    .when(table.salary > 100000, 1)
+    .when(table.salary > 50000, 2)
+    .else_(3)
+    .as_("salary_band")
+)
+query = table.select(table.dept, band).build()
+```
+
+Output:
+
+```postgresql
+SELECT "dept", CASE WHEN employees.salary > 100000 THEN 1 WHEN employees.salary > 50000 THEN 2 ELSE 3 END AS salary_band FROM "employees"
+```
+
+CASE expressions can also be used in `ORDER BY` and `GROUP BY`:
+
+```python
+table.select("dept").order_by(case_().when(table.dept == "Sales", 1).else_(2)).build()
+```
+
 ## Subqueries
 Subqueries can be used when evaluating `Column`s in the form of a membership:
 

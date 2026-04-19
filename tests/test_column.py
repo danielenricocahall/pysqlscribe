@@ -1,10 +1,12 @@
 from pysqlscribe.column import (
+    Case,
     Column,
     CompoundExpression,
     Expression,
     InvalidColumnNameException,
     ExpressionColumn,
     NotExpression,
+    case_,
 )
 import pytest
 
@@ -166,6 +168,59 @@ def test_expression_not_compound():
     col = Column("column1", "table1")
     expr = ~((col == 1) | (col == 2))
     assert str(expr) == "NOT ((table1.column1 = 1) OR (table1.column1 = 2))"
+
+
+def test_case_basic_with_else():
+    col = Column("dept", "employees")
+    expr = case_().when(col == "Sales", "sales").else_("other")
+    assert isinstance(expr, Case)
+    assert (
+        str(expr) == "CASE WHEN employees.dept = 'Sales' THEN 'sales' ELSE 'other' END"
+    )
+
+
+def test_case_without_else():
+    col = Column("dept", "employees")
+    expr = case_().when(col == "Sales", "sales")
+    assert str(expr) == "CASE WHEN employees.dept = 'Sales' THEN 'sales' END"
+
+
+def test_case_multiple_whens_numeric():
+    col = Column("salary", "employees")
+    expr = case_().when(col > 100000, 1).when(col > 50000, 2).else_(3)
+    assert (
+        str(expr)
+        == "CASE WHEN employees.salary > 100000 THEN 1 WHEN employees.salary > 50000 THEN 2 ELSE 3 END"
+    )
+
+
+def test_case_column_valued_then():
+    dept = Column("dept", "employees")
+    salary = Column("salary", "employees")
+    expr = case_().when(dept == "Sales", salary).else_(0)
+    assert (
+        str(expr)
+        == "CASE WHEN employees.dept = 'Sales' THEN employees.salary ELSE 0 END"
+    )
+
+
+def test_case_with_alias():
+    col = Column("dept", "employees")
+    expr = case_().when(col == "Sales", 1).else_(0).as_("is_sales")
+    assert (
+        str(expr) == "CASE WHEN employees.dept = 'Sales' THEN 1 ELSE 0 END AS is_sales"
+    )
+
+
+def test_case_empty_raises():
+    with pytest.raises(ValueError):
+        str(case_())
+
+
+def test_case_unsupported_value_type():
+    col = Column("dept", "employees")
+    with pytest.raises(NotImplementedError):
+        str(case_().when(col == "Sales", ["list"]))
 
 
 def test_column_not_implemented():

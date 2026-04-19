@@ -27,6 +27,7 @@ from pysqlscribe.regex_patterns import (
     AGGREGATE_IDENTIFIER_REGEX,
     SCALAR_IDENTIFIER_REGEX,
     EXPRESSION_IDENTIFIER_REGEX,
+    CASE_IDENTIFIER_REGEX,
     ALIAS_REGEX,
 )
 from pysqlscribe.renderers.base import Renderer
@@ -112,6 +113,7 @@ class Dialect(ABC):
             AGGREGATE_IDENTIFIER_REGEX.match(identifier)
             or SCALAR_IDENTIFIER_REGEX.match(identifier)
             or EXPRESSION_IDENTIFIER_REGEX.match(identifier)
+            or CASE_IDENTIFIER_REGEX.match(identifier)
         ):
             identifier = identifier
         else:

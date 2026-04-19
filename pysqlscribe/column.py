@@ -10,6 +10,22 @@ from pysqlscribe.regex_patterns import (
 )
 
 
+def _resolve_value(value) -> str:
+    """Render a CASE/comparison value: columns become fqn, strings are quoted,
+    numbers pass through, and pre-rendered expressions stringify as-is."""
+    if isinstance(value, Column):
+        return value.fully_qualified_name
+    if isinstance(value, Expression):
+        return str(value)
+    if isinstance(value, str):
+        return f"'{value}'"
+    if isinstance(value, (int, float)):
+        return str(value)
+    raise NotImplementedError(
+        f"Unsupported value type for SQL expression: {type(value).__name__}"
+    )
+
+
 class Expression:
     def __init__(self, left: str, operator: str, right: str):
         self.left = left
@@ -234,3 +250,37 @@ class ExpressionColumn(Column):
     @property
     def fully_qualified_name(self):
         return self.name
+
+
+_UNSET = object()
+
+
+class Case(AliasMixin):
+    """Builder for CASE WHEN ... THEN ... [ELSE ...] END expressions."""
+
+    def __init__(self):
+        self._whens: list[tuple[Expression, object]] = []
+        self._else = _UNSET
+
+    def when(self, condition: Expression, value) -> Self:
+        self._whens.append((condition, value))
+        return self
+
+    def else_(self, value) -> Self:
+        self._else = value
+        return self
+
+    def __str__(self) -> str:
+        if not self._whens:
+            raise ValueError("CASE requires at least one WHEN clause")
+        parts = ["CASE"]
+        for cond, val in self._whens:
+            parts.append(f"WHEN {cond} THEN {_resolve_value(val)}")
+        if self._else is not _UNSET:
+            parts.append(f"ELSE {_resolve_value(self._else)}")
+        parts.append("END")
+        return " ".join(parts) + self.alias
+
+
+def case_() -> Case:
+    return Case()

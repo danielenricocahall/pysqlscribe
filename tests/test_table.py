@@ -1,7 +1,8 @@
 import pytest
 
-from pysqlscribe.aggregate_functions import avg
+from pysqlscribe.aggregate_functions import avg, count
 from pysqlscribe.ast.joins import JoinType
+from pysqlscribe.column import case_
 
 from pysqlscribe.table import Table
 
@@ -85,6 +86,43 @@ def test_table_where_or_composition():
     assert (
         query == "SELECT `test_column` FROM `test_table` "
         "WHERE (test_table.test_column = 1) OR (test_table.test_column = 2)"
+    )
+
+
+def test_table_case_in_select():
+    table = Table("employees", "dept", "salary", dialect="postgres")
+    expr = (
+        case_()
+        .when(table.dept == "Sales", "sales_team")
+        .else_("other")
+        .as_("team_label")
+    )
+    query = table.select(expr).build()
+    assert (
+        query
+        == "SELECT CASE WHEN employees.dept = 'Sales' THEN 'sales_team' ELSE 'other' END AS team_label FROM \"employees\""
+    )
+
+
+def test_table_case_in_order_by():
+    table = Table("employees", "dept", "salary", dialect="postgres")
+    expr = case_().when(table.dept == "Sales", 1).else_(2)
+    query = table.select("dept").order_by(expr).build()
+    assert (
+        query
+        == 'SELECT "dept" FROM "employees" ORDER BY CASE WHEN employees.dept = \'Sales\' THEN 1 ELSE 2 END'
+    )
+
+
+def test_table_case_in_group_by():
+    table = Table("employees", "salary", dialect="postgres")
+    band = case_().when(table.salary > 50000, "high").else_("low")
+    query = table.select(band, count("*")).group_by(band).build()
+    assert (
+        query
+        == "SELECT CASE WHEN employees.salary > 50000 THEN 'high' ELSE 'low' END, "
+        'COUNT(*) FROM "employees" '
+        "GROUP BY CASE WHEN employees.salary > 50000 THEN 'high' ELSE 'low' END"
     )
 
 

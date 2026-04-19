@@ -150,7 +150,7 @@ class Renderer:
     def _resolve_columns(self, *args) -> str:
         if not args:
             args = ["*"]
-        if WILDCARD_REGEX.match(args[0]):
+        if isinstance(args[0], str) and WILDCARD_REGEX.match(args[0]):
             columns = args[0]
         else:
             columns = self.dialect.normalize_identifiers_args(args)
