@@ -1,4 +1,3 @@
-import warnings
 from typing import Self
 
 from pysqlscribe.ast.base import Node
@@ -14,8 +13,6 @@ from pysqlscribe.ast.nodes import (
     HavingNode,
     OrderByNode,
     WhereNode,
-    InsertNode,
-    ReturningNode,
     UnionNode,
     LimitNode,
 )
@@ -50,27 +47,6 @@ class Query:
         self.node = self.node.next_
         return self
 
-    def insert(self, *columns, **kwargs) -> Self:
-        warnings.warn(
-            "`insert` capabilities will be removed in 1.0.0.",
-            DeprecationWarning,
-            stacklevel=3,
-        )
-        table = kwargs.get("into")
-        values = kwargs.get("values")
-        if table is None or values is None:
-            raise ValueError("Insert queries require `into` and `values` keywords.")
-        if not self.node:
-            self.node = InsertNode(
-                {"columns": columns, "table": table, "values": values}
-            )
-        return self
-
-    def returning(self, *args) -> Self:
-        self.node.add(ReturningNode({"columns": list(args)}), self.dialect)
-        self.node = self.node.next_
-        return self
-
     def join(
         self, table: str, join_type: str = JoinType.INNER, condition: str | None = None
     ) -> Self:
@@ -87,28 +63,30 @@ class Query:
         self.node = self.node.next_
         return self
 
-    def inner_join(self, table: str, condition: str):
+    def inner_join(self, table: str, condition: str) -> Self:
         return self.join(table, JoinType.INNER, condition)
 
-    def outer_join(self, table: str, condition: str):
+    def outer_join(self, table: str, condition: str) -> Self:
         return self.join(table, JoinType.OUTER, condition)
 
-    def left_join(self, table: str, condition: str):
+    def left_join(self, table: str, condition: str) -> Self:
         return self.join(table, JoinType.LEFT, condition)
 
-    def right_join(self, table: str, condition: str):
+    def right_join(self, table: str, condition: str) -> Self:
         return self.join(table, JoinType.RIGHT, condition)
 
-    def cross_join(self, table: str):
+    def cross_join(self, table: str) -> Self:
         return self.join(table, JoinType.CROSS)
 
-    def natural_join(self, table: str):
+    def natural_join(self, table: str) -> Self:
         return self.join(table, JoinType.NATURAL)
 
     def where(self, *args) -> Self:
-        where_node = WhereNode({"conditions": list(args)})
-        self.node.add(where_node, self.dialect)
-        self.node = self.node.next_
+        if isinstance(self.node, WhereNode):
+            self.node.state["conditions"].extend(args)
+        else:
+            self.node.add(WhereNode({"conditions": list(args)}), self.dialect)
+            self.node = self.node.next_
         return self
 
     def order_by(self, *args) -> Self:
@@ -138,9 +116,11 @@ class Query:
         return self
 
     def having(self, *args) -> Self:
-        having_node = HavingNode({"conditions": list(args)})
-        self.node.add(having_node, self.dialect)
-        self.node = self.node.next_
+        if isinstance(self.node, HavingNode):
+            self.node.state["conditions"].extend(args)
+        else:
+            self.node.add(HavingNode({"conditions": list(args)}), self.dialect)
+            self.node = self.node.next_
         return self
 
     def union(self, query: Self | str, all_: bool = False) -> Self:

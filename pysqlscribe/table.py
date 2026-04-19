@@ -49,14 +49,6 @@ class Table(Query, AliasMixin):
             table = f"{table.table_name}{table.alias}"
         return super().join(table, join_type, condition)
 
-    def insert(self, *columns, **kwargs) -> Self:
-        columns = [
-            column.name if isinstance(column, Column) else column for column in columns
-        ]
-        return super().insert(
-            *columns, into=self.table_name, values=kwargs.get("values")
-        )
-
     @property
     def table_name(self):
         if self.schema:

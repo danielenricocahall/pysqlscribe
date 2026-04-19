@@ -256,102 +256,6 @@ def test_combine_operations(all_, combine_operation):
     )
 
 
-def test_insert():
-    query_builder = Query("mysql")
-    query = query_builder.insert(
-        "test_column",
-        "another_test_column",
-        into="test_table",
-        values=(1, 2),
-    ).build()
-    assert (
-        query
-        == "INSERT INTO `test_table` (`test_column`, `another_test_column`) VALUES (1,2)"
-    )
-
-
-def test_insert_no_cols_query():
-    query_builder = Query("mysql")
-    query = query_builder.insert(
-        into="test_table",
-        values=(1, 2),
-    ).build()
-    assert query == "INSERT INTO `test_table` VALUES (1,2)"
-
-
-def test_insert_multiple_values():
-    query_builder = Query("mysql")
-    query = query_builder.insert(
-        "test_column", "another_test_column", into="test_table", values=[(1, 2), (3, 4)]
-    ).build()
-    assert (
-        query
-        == "INSERT INTO `test_table` (`test_column`, `another_test_column`) VALUES (1,2),(3,4)"
-    )
-
-
-def test_insert_column_and_values_mismatch():
-    query_builder = Query("mysql")
-    with pytest.raises(AssertionError):
-        query_builder.insert(
-            "test_column", "another_test_column", into="test_table", values=(1,)
-        ).build()
-
-
-def test_insert_no_table_provided():
-    query_builder = Query("mysql")
-    with pytest.raises(ValueError):
-        query_builder.insert("test_column", "another_test_column", values=(1, 2))
-
-
-@pytest.mark.parametrize("return_value", ["id", "*"])
-def test_insert_with_returning(return_value):
-    query_builder = Query("postgres")
-    query = (
-        query_builder.insert(
-            "id", "employee_name", into="employees", values=(1, "'john doe'")
-        )
-        .returning(return_value)
-        .build()
-    )
-    if return_value != "*":
-        return_value = query_builder.dialect.escape_identifier(return_value)
-    assert (
-        query
-        == f'INSERT INTO "employees" ("id", "employee_name") VALUES (1,\'john doe\') RETURNING {return_value}'
-    )
-
-
-def test_insert_with_returning_multiple_values():
-    query_builder = Query("postgres")
-    query = (
-        query_builder.insert(
-            "id", "employee_name", into="employees", values=(1, "'john doe'")
-        )
-        .returning("id", "employee_name")
-        .build()
-    )
-    assert (
-        query
-        == 'INSERT INTO "employees" ("id", "employee_name") VALUES (1,\'john doe\') RETURNING "id", "employee_name"'
-    )
-
-
-def test_insert_returning_empty():
-    query_builder = Query("postgres")
-    query = (
-        query_builder.insert(
-            "id", "employee_name", into="employees", values=(1, "'john doe'")
-        )
-        .returning()
-        .build()
-    )
-    assert (
-        query
-        == 'INSERT INTO "employees" ("id", "employee_name") VALUES (1,\'john doe\') RETURNING *'
-    )
-
-
 def test_invalid_dialect():
     with pytest.raises(ValueError):
         Query("non-existent-dialect")
@@ -408,3 +312,44 @@ def test_chained_union(dialect):
         f"UNION SELECT {esc('id')} FROM {esc('b')} "
         f"UNION SELECT {esc('id')} FROM {esc('c')}"
     )
+
+
+def test_chained_where_merges_with_and():
+    query = (
+        Query("postgres")
+        .select("x")
+        .from_("t")
+        .where("a = 1")
+        .where("b = 2")
+        .where("c = 3")
+        .build()
+    )
+    assert query == 'SELECT "x" FROM "t" WHERE a = 1 AND b = 2 AND c = 3'
+
+
+def test_chained_having_merges_with_and():
+    query = (
+        Query("postgres")
+        .select("x")
+        .from_("t")
+        .group_by("x")
+        .having("a = 1")
+        .having("b = 2")
+        .build()
+    )
+    assert query == 'SELECT "x" FROM "t" GROUP BY "x" HAVING a = 1 AND b = 2'
+
+
+def test_oracle_order_by_limit_without_offset():
+    query = Query("oracle").select("x").from_("t").order_by("x").limit(10).build()
+    assert query == 'SELECT "x" FROM "t" ORDER BY "x" FETCH NEXT 10 ROWS ONLY'
+
+
+def test_oracle_offset_limit_without_order_by():
+    query = Query("oracle").select("x").from_("t").offset(5).limit(10).build()
+    assert query == 'SELECT "x" FROM "t" OFFSET 5 ROWS FETCH NEXT 10 ROWS ONLY'
+
+
+def test_oracle_rejects_nodes_after_limit():
+    with pytest.raises(InvalidNodeError):
+        Query("oracle").select("x").from_("t").limit(10).order_by("x").build()

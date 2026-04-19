@@ -15,8 +15,6 @@ from pysqlscribe.ast.nodes import (
     HavingNode,
     OffsetNode,
     SelectNode,
-    InsertNode,
-    ReturningNode,
 )
 from pysqlscribe.column import OrderedColumn
 from pysqlscribe.protocols import DialectProtocol
@@ -38,10 +36,6 @@ EXCEPT = "EXCEPT"
 EXCEPT_ALL = f"EXCEPT {ALL}"
 INTERSECT = "INTERSECT"
 INTERSECT_ALL = f"INTERSECT {ALL}"
-INSERT = "INSERT"
-INTO = "INTO"
-VALUES = "VALUES"
-RETURNING = "RETURNING"
 AND = "AND"
 
 
@@ -64,8 +58,6 @@ class Renderer:
             UnionNode: self.render_union,
             ExceptNode: self.render_except,
             IntersectNode: self.render_intersect,
-            InsertNode: self.render_insert,
-            ReturningNode: self.render_returning,
         }
 
     def render(self, node: Node) -> str:
@@ -134,19 +126,6 @@ class Renderer:
         operation = INTERSECT_ALL if node.state.get("all", False) else INTERSECT
         return f"{operation} {node.query}"
 
-    def render_insert(self, node: InsertNode) -> str:
-        columns = self.dialect.normalize_identifiers_args(node.state["columns"])
-        table = self.dialect.normalize_identifiers_args(node.state["table"])
-        values = self._resolve_insert_values(
-            node.state["columns"], node.state["values"]
-        )
-        columns = f" ({columns})" if columns else ""
-        return f"{INSERT} {INTO} {table}{columns} {VALUES} {values}"
-
-    def render_returning(self, node: ReturningNode) -> str:
-        columns = self._resolve_columns(*node.state["columns"])
-        return f"{RETURNING} {columns}"
-
     def _resolve_columns(self, *args) -> str:
         if not args:
             args = ["*"]
@@ -155,14 +134,3 @@ class Renderer:
         else:
             columns = self.dialect.normalize_identifiers_args(args)
         return columns
-
-    @staticmethod
-    def _resolve_insert_values(columns, values) -> str:
-        if isinstance(values, tuple):
-            values = [values]
-        assert all(
-            (len(columns) == 0 or len(columns) == len(value) for value in values)
-        ), "Number of columns and values must match"
-        values = [f"{','.join(map(str, value))}" for value in values]
-        values = ",".join([f"({v})" for v in values])
-        return values

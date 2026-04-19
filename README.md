@@ -22,7 +22,8 @@ While LLMs are fairly adept at building queries given the quantity of SQL on the
 - **Dependency Free**: No external dependencies outside of the Python standard library.
 - **Multiple APIs**: Offers multiple APIs for building queries, including a `Query` class, a `Table` class, and a `Schema` class.
 - **DDL Parser/Loader**: Can parse DDL files to create `Table` objects, facilitating integration with existing database schema definitions.
-- **Safe by default**: All identifiers are escaped by default to prevent SQL injection attacks, with the option to disable this behavior if desired.
+- **Safe by default**: All identifiers and string literals are escaped by default; for untrusted user input in analytical workloads, consider pairing
+  with a parameterized driver.
 
 # Installation
 To install, you can simply run:
@@ -449,100 +450,6 @@ WITH RECURSIVE EmployeePaths AS (
         FROM `employees` AS e 
         INNER JOIN `EmployeePaths` AS ep ON e.manager_id = ep.employee_id
         ) SELECT * FROM `EmployeePaths` ORDER BY `level`
-```
-
-## Inserts 
- > Note: Insert capabilities deprecated as of 1.0.0.
-
-While the primary focus of this library is on building retrieval (`"SELECT"`) queries, you can also build `INSERT` queries:
-
-```python
-from pysqlscribe.query import Query
-
-query_builder = Query("mysql")
-query = query_builder.insert(
-    "test_column",
-    "another_test_column",
-    into="test_table",
-    values=(1, 2),
-).build()
-```
-
-Output:
-
-```mysql
-INSERT INTO `test_table` (`test_column`,`another_test_column`) VALUES (1,2)
-```
-
-While `into` and `values` are required keyword arguments, if no positional arguments (`args`) are supplied, it is omitted from the query:
-
-```python
-from pysqlscribe.query import Query
-
-query_builder = Query("mysql")
-query = query_builder.insert(
-    into="test_table",
-    values=(1, 2),
-).build()
-```
-
-Output:
-
-```mysql
-
-INSERT INTO `test_table` VALUES (1,2)
-```
-
-Multiple values can also be supplied:
-
-```python
-from pysqlscribe.query import Query
-
-query_builder = Query("mysql")
-query = query_builder.insert(
-    "test_column", "another_test_column", into="test_table", values=[(1, 2), (3, 4)]
-).build()
-```
-
-Output:
-```mysql
-INSERT INTO `test_table` (`test_column`,`another_test_column`) VALUES (1,2),(3,4)
-```
-
-`RETURNING` is also supported:
-
-```python
-from pysqlscribe.query import Query
-
-query_builder = Query("postgres")
-query = (
-    query_builder.insert(
-        "id", "employee_name", into="employees", values=(1, "'john doe'")
-    )
-    .returning("id", "employee_name")
-    .build()
-)
-```
-
-Output:
-
-```postgresql
-INSERT INTO "employees" ("id","employee_name") VALUES (1,'john doe') RETURNING "id","employee_name"
-```
-
-The `Table` API offers the `insert` capability. Similar to `select`, the `into` argument is inferred from the table name:
-
-```python
-from pysqlscribe.table import Table
-
-table = Table("employees", "salary", "bonus", dialect="mysql")
-query = table.insert(table.salary, table.bonus, values=(100, 200)).build()
-```
-
-Output:
-
-```mysql
-INSERT INTO `employees` (`salary`,`bonus`) VALUES (100,200)
 ```
 
 ## Escaping Identifiers
