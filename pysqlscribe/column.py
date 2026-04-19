@@ -179,8 +179,8 @@ class Column(AliasMixin):
     def __round__(self, ndigits: int | None = None):
         round_expr = (
             f"{ScalarFunctions.ROUND}({self.name}, {ndigits})"
-            if ndigits
-            else f"ROUND({self.name})"
+            if ndigits is not None
+            else f"{ScalarFunctions.ROUND}({self.name})"
         )
         return ExpressionColumn(round_expr, self.table_name)
 
