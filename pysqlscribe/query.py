@@ -52,7 +52,7 @@ class Query:
 
     def insert(self, *columns, **kwargs) -> Self:
         warnings.warn(
-            "`insert` capabilities will be removed in 1.0.0.`",
+            "`insert` capabilities will be removed in 1.0.0.",
             DeprecationWarning,
             stacklevel=3,
         )
