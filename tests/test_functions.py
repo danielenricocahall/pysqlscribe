@@ -147,7 +147,11 @@ def test_power_with_non_column(base, exponent):
 
 @pytest.mark.parametrize(
     "rounding_function_name,rounding_function",
-    [(ScalarFunctions.ROUND, round_), (ScalarFunctions.TRUNC, trunc)],
+    [
+        (ScalarFunctions.ROUND, round_),
+        (ScalarFunctions.ROUND, round),
+        (ScalarFunctions.TRUNC, trunc),
+    ],
 )
 def test_rounding_functions(rounding_function_name, rounding_function):
     payroll_table = Table("payroll", "id", "salary", "category", dialect="postgres")
@@ -156,9 +160,10 @@ def test_rounding_functions(rounding_function_name, rounding_function):
 
     query = payroll_table.select(rounding_function(payroll_table.salary, 2)).build()
     assert query == f'SELECT {rounding_function_name}(salary, 2) FROM "payroll"'
-
-    query = payroll_table.select(rounding_function(100.5678, 2)).build()
-    assert query == f'SELECT {rounding_function_name}(100.5678, 2) FROM "payroll"'
+    if rounding_function != round:
+        # deliberately skip this one for builtin `round` as it will return a float
+        query = payroll_table.select(rounding_function(100.5678, 2)).build()
+        assert query == f'SELECT {rounding_function_name}(100.5678, 2) FROM "payroll"'
 
 
 def test_nullif():

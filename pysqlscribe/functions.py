@@ -16,7 +16,7 @@ class AggregateFunctions(str, Enum):
 class ScalarFunctions(str, Enum):
     ABS = "ABS"
     FLOOR = "FLOOR"
-    CEIL = "CEIl"
+    CEIL = "CEIL"
     SQRT = "SQRT"
     ROUND = "ROUND"
     SIGN = "SIGN"

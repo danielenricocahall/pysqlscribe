@@ -1,3 +1,5 @@
+import math
+
 from pysqlscribe.column import Column, ExpressionColumn
 from pysqlscribe.functions import ScalarFunctions
 
@@ -9,14 +11,20 @@ def _scalar_function(scalar_function: str, column: Column | str | int) -> Column
 
 
 def abs_(column: Column | str):
+    if isinstance(column, Column):
+        return abs(column)
     return _scalar_function(ScalarFunctions.ABS, column)
 
 
 def floor(column: Column | str):
+    if isinstance(column, Column):
+        return math.floor(column)
     return _scalar_function(ScalarFunctions.FLOOR, column)
 
 
 def ceil(column: Column | str):
+    if isinstance(column, Column):
+        return math.ceil(column)
     return _scalar_function(ScalarFunctions.CEIL, column)
 
 
@@ -61,9 +69,7 @@ def round_(column: Column | str, decimals: int | None = None):
         return _scalar_function(ScalarFunctions.ROUND, column)
     if not isinstance(column, Column):
         return f"{ScalarFunctions.ROUND}({column}, {decimals})"
-    return ExpressionColumn(
-        f"{ScalarFunctions.ROUND}({column}, {decimals})", column.table_name
-    )
+    return round(column, decimals)
 
 
 def trunc(column: Column | str, decimals: int | None = None):
