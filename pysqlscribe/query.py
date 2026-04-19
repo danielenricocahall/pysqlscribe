@@ -1,4 +1,3 @@
-import warnings
 from typing import Self
 
 from pysqlscribe.ast.base import Node
@@ -14,7 +13,6 @@ from pysqlscribe.ast.nodes import (
     HavingNode,
     OrderByNode,
     WhereNode,
-    InsertNode,
     ReturningNode,
     UnionNode,
     LimitNode,
@@ -48,22 +46,6 @@ class Query:
             self.dialect,
         )
         self.node = self.node.next_
-        return self
-
-    def insert(self, *columns, **kwargs) -> Self:
-        warnings.warn(
-            "`insert` capabilities will be removed in 1.0.0.",
-            DeprecationWarning,
-            stacklevel=3,
-        )
-        table = kwargs.get("into")
-        values = kwargs.get("values")
-        if table is None or values is None:
-            raise ValueError("Insert queries require `into` and `values` keywords.")
-        if not self.node:
-            self.node = InsertNode(
-                {"columns": columns, "table": table, "values": values}
-            )
         return self
 
     def returning(self, *args) -> Self:

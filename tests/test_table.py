@@ -222,12 +222,6 @@ def test_operations_columns_and_numerics():
     )
 
 
-def test_insert():
-    table = Table("employees", "salary", "bonus", dialect="mysql")
-    query = table.insert(table.salary, table.bonus, values=(100, 200)).build()
-    assert query == "INSERT INTO `employees` (`salary`, `bonus`) VALUES (100,200)"
-
-
 def test_subquery_columns():
     employees = Table("employees", "salary", "bonus", "department_id", dialect="mysql")
     departments = Table("departments", "id", "name", "manager_id", dialect="mysql")
