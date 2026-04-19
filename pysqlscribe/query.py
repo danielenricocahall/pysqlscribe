@@ -1,3 +1,4 @@
+import warnings
 from typing import Self
 
 from pysqlscribe.ast.base import Node
@@ -50,6 +51,11 @@ class Query:
         return self
 
     def insert(self, *columns, **kwargs) -> Self:
+        warnings.warn(
+            "`insert` capabilities will be removed in 1.0.0.`",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         table = kwargs.get("into")
         values = kwargs.get("values")
         if table is None or values is None:
