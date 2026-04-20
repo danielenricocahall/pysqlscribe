@@ -287,6 +287,9 @@ class Column(AliasMixin):
     def desc(self) -> "OrderedColumn":
         return self._sort("DESC")
 
+    def _identifier_body(self, dialect) -> str:
+        return dialect.escape_identifier(self.name)
+
 
 class ExpressionColumn(Column):
     """Representation of a column that is the result of an arithmetic operation. Main benefit is to ensure the
@@ -294,6 +297,9 @@ class ExpressionColumn(Column):
 
     @property
     def fully_qualified_name(self):
+        return self.name
+
+    def _identifier_body(self, dialect) -> str:
         return self.name
 
 
@@ -315,7 +321,8 @@ class Case(AliasMixin):
         self._else = value
         return self
 
-    def __str__(self) -> str:
+    @property
+    def expression(self):
         if not self._whens:
             raise ValueError("CASE requires at least one WHEN clause")
         parts = ["CASE"]
@@ -324,7 +331,13 @@ class Case(AliasMixin):
         if self._else is not _UNSET:
             parts.append(f"ELSE {_resolve_value(self._else)}")
         parts.append("END")
-        return " ".join(parts) + self.alias
+        return " ".join(parts)
+
+    def __str__(self) -> str:
+        return self.expression + self.alias
+
+    def _identifier_body(self, dialect) -> str:
+        return self.expression
 
 
 def case_() -> Case:
