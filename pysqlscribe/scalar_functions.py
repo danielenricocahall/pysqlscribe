@@ -173,3 +173,15 @@ def sin(column: Column | str | int):
 
 def tan(column: Column | str | int):
     return _scalar_function(ScalarFunctions.TAN, column)
+
+
+def sinh(column: Column | str | int):
+    return _scalar_function(ScalarFunctions.SINH, column)
+
+
+def cosh(column: Column | str | int):
+    return _scalar_function(ScalarFunctions.COSH, column)
+
+
+def tanh(column: Column | str | int):
+    return _scalar_function(ScalarFunctions.TANH, column)
