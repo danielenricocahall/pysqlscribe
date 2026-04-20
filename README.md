@@ -564,9 +564,8 @@ This is anticipated to grow, also there are certainly operations that are missin
 
 
 # TODO
+- [ ] Potentially incorporate per-dialect scalar functions, as there are functions which are only available in particular dialects (or semantics across dialects slightly differ)
+- [ ] Add a parameterized query building capability
 - [ ] Add more dialects
-- [ ] Improved injection mitigation
-- [ ] Support more aggregate and scalar functions
-- [ ] Enhance how where clauses are handled
 
 > 💡 Interested in contributing? Check out the [Local Development & Contributions Guide](https://github.com/danielenricocahall/pysqlscribe/blob/main/CONTRIBUTING.md).
