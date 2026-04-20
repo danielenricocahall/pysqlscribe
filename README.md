@@ -409,6 +409,29 @@ Output:
 SELECT * FROM `employees` WHERE employees.department_id IN (SELECT `id` FROM `departments` WHERE departments.name = 'Engineering')
 ```
 
+Additionally, subqueries can aliased and queried from:
+
+```python
+from pysqlscribe.query import Query
+from pysqlscribe.aggregate_functions import avg
+
+query_builder = Query("mysql")
+query_builder.select("department", avg("salary")).from_("employees").group_by(
+    "department"
+)
+another_query_builder = Query("mysql")
+query = (
+    another_query_builder.select("*")
+    .from_(query_builder.as_("aggregated_employees"))
+    .build()
+)
+```
+Output:
+
+```mysql
+SELECT * FROM (SELECT `department`, AVG(salary) FROM `employees` GROUP BY `department`) AS aggregated_employees
+```
+
 ## Common Table Expressions (CTEs)
 
 CTEs (both regular and recursive) can be built using the `With` API (using the both the class and the functional wrapper). `Query` objects, (and by extension, `Table` objects) are provided as the subquery:
