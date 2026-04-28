@@ -1,9 +1,9 @@
 [project]
 name = "pysqlscribe"
-version = "0.13.0"
+version = "1.0.0"
 description = "A simple Python Library for building relational database queries using objects"
 readme = "README.md"
-authors = [{ name="Daniel Cahall", email="danielenricocahall@gmail.com" }]
+authors = [{ name="Daniel Cahall" }]
 requires-python = ">=3.11"
 dependencies = []
 license-files = ["LICENSE"]
