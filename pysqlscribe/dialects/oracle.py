@@ -6,6 +6,8 @@ from pysqlscribe.renderers.oracle import OracleRenderer
 
 @DialectRegistry.register("oracle")
 class OracleDialect(Dialect):
+    placeholder_style = "named"
+
     def make_renderer(self) -> Renderer:
         return OracleRenderer(self)
 

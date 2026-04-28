@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Any, Self, overload
 
 from pysqlscribe.alias import AliasMixin
 from pysqlscribe.ast.base import Node
@@ -21,6 +21,7 @@ from pysqlscribe.dialects import (
     Dialect,
 )
 from pysqlscribe.dialects.base import DialectRegistry
+from pysqlscribe.params import ParamCollector
 
 
 class Query(AliasMixin):
@@ -139,7 +140,22 @@ class Query(AliasMixin):
         self.node = self.node.next_
         return self
 
-    def build(self, clear: bool = True) -> str:
+    @overload
+    def build(self, clear: bool = ..., *, parameterize: bool = False) -> str: ...
+    @overload
+    def build(
+        self, clear: bool = ..., *, parameterize: bool = True
+    ) -> tuple[str, list[Any]]: ...
+
+    def build(
+        self, clear: bool = True, *, parameterize: bool = False
+    ) -> str | tuple[str, list[Any]]:
+        if parameterize:
+            collector = ParamCollector(self.dialect)
+            query = self.dialect.render(self.node, collector)
+            if clear:
+                self.node = None
+            return query.strip(), collector.params
         query = self.dialect.render(self.node)
         if clear:
             self.node = None

@@ -3,6 +3,7 @@ from typing import Self, Iterable, Protocol, runtime_checkable
 from pysqlscribe.alias import AliasMixin
 from pysqlscribe.exceptions import InvalidColumnsError
 from pysqlscribe.functions import ScalarFunctions
+from pysqlscribe.params import Literal, ParamCollector
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
     AGGREGATE_IDENTIFIER_REGEX,
@@ -40,14 +41,49 @@ def _resolve_value(value, dialect: DialectLike | None = None) -> str:
     return _ansi_escape_value(value)
 
 
+class _BetweenPair:
+    """Right-hand side of BETWEEN/NOT BETWEEN: two operands joined by AND."""
+
+    __slots__ = ("low", "high")
+
+    def __init__(self, low, high):
+        self.low = low
+        self.high = high
+
+
+def _render_operand(operand, collector: ParamCollector | None, dialect) -> str:
+    if isinstance(operand, Literal):
+        if collector is not None:
+            return collector.add(operand.value)
+        return _resolve_value(operand.value, dialect)
+    if isinstance(operand, _BetweenPair):
+        low = _render_operand(operand.low, collector, dialect)
+        high = _render_operand(operand.high, collector, dialect)
+        return f"{low} AND {high}"
+    if isinstance(operand, list):
+        items = ", ".join(_render_operand(item, collector, dialect) for item in operand)
+        return f"({items})"
+    if isinstance(operand, Expression):
+        return operand.render(collector)
+    return str(operand)
+
+
 class Expression:
-    def __init__(self, left: str, operator: str, right: str):
+    def __init__(
+        self, left, operator: str, right, *, dialect: DialectLike | None = None
+    ):
         self.left = left
         self.operator = operator
         self.right = right
+        self._dialect = dialect
+
+    def render(self, collector: ParamCollector | None = None) -> str:
+        left = _render_operand(self.left, collector, self._dialect)
+        right = _render_operand(self.right, collector, self._dialect)
+        return f"{left} {self.operator} {right}"
 
     def __str__(self):
-        return f"{self.left} {self.operator} {self.right}"
+        return self.render(None)
 
     def __repr__(self):
         return f"Expression({self.left!r}, {self.operator!r}, {self.right!r})"
@@ -67,9 +103,12 @@ class CompoundExpression(Expression):
         self.left = left
         self.operator = operator
         self.right = right
+        self._dialect = getattr(left, "_dialect", None) or getattr(
+            right, "_dialect", None
+        )
 
-    def __str__(self):
-        return f"({self.left}) {self.operator} ({self.right})"
+    def render(self, collector: ParamCollector | None = None) -> str:
+        return f"({self.left.render(collector)}) {self.operator} ({self.right.render(collector)})"
 
     def __repr__(self):
         return f"CompoundExpression({self.left!r}, {self.operator!r}, {self.right!r})"
@@ -81,9 +120,10 @@ class NotExpression(Expression):
         self.left = "NOT"
         self.operator = ""
         self.right = inner
+        self._dialect = getattr(inner, "_dialect", None)
 
-    def __str__(self):
-        return f"NOT ({self.inner})"
+    def render(self, collector: ParamCollector | None = None) -> str:
+        return f"NOT ({self.inner.render(collector)})"
 
     def __repr__(self):
         return f"NotExpression({self.inner!r})"
@@ -136,13 +176,17 @@ class Column(AliasMixin):
     def _comparison_expression(self, operator: str, other: Self | str | int):
         if isinstance(other, Column):
             return Expression(
-                self.fully_qualified_name, operator, other.fully_qualified_name
+                self.fully_qualified_name,
+                operator,
+                other.fully_qualified_name,
+                dialect=self._dialect,
             )
         if isinstance(other, (str, int, float)):
             return Expression(
                 self.fully_qualified_name,
                 operator,
-                _resolve_value(other, self._dialect),
+                Literal(other),
+                dialect=self._dialect,
             )
         raise NotImplementedError(
             "Columns can only be compared to other columns or fixed string values"
@@ -165,7 +209,14 @@ class Column(AliasMixin):
         self, operator: str, other: Iterable[str | int | float] | Subqueryish
     ):
         if isinstance(other, Subqueryish):
-            return Expression(self.fully_qualified_name, operator, f"({other})")
+            # Subquery literals are baked into the subquery string at this point
+            # and won't propagate to a parent ParamCollector. Tracked as a follow-up.
+            return Expression(
+                self.fully_qualified_name,
+                operator,
+                f"({other})",
+                dialect=self._dialect,
+            )
         other_list = list(other)
         if not other_list:
             raise NotImplementedError(
@@ -174,10 +225,12 @@ class Column(AliasMixin):
         if all(isinstance(item, str) for item in other_list) or all(
             isinstance(item, (int, float)) for item in other_list
         ):
-            right_side = ", ".join(
-                _resolve_value(item, self._dialect) for item in other_list
+            return Expression(
+                self.fully_qualified_name,
+                operator,
+                [Literal(item) for item in other_list],
+                dialect=self._dialect,
             )
-            return Expression(self.fully_qualified_name, operator, f"({right_side})")
         raise NotImplementedError(
             "membership expressions must be created with an iterable containing items of the same type (all strings or all numbers); mixed types are not allowed"
         )
@@ -260,10 +313,17 @@ class Column(AliasMixin):
         return self._comparison_expression("ILIKE", pattern)
 
     def _between(self, low, high, operator) -> Expression:
-        low_expr = _resolve_value(low, self._dialect)
-        high_expr = _resolve_value(high, self._dialect)
+        low_operand = low if isinstance(low, (Column, Expression)) else Literal(low)
+        high_operand = high if isinstance(high, (Column, Expression)) else Literal(high)
+        if isinstance(low_operand, Column):
+            low_operand = low_operand.fully_qualified_name
+        if isinstance(high_operand, Column):
+            high_operand = high_operand.fully_qualified_name
         return Expression(
-            self.fully_qualified_name, operator, f"{low_expr} AND {high_expr}"
+            self.fully_qualified_name,
+            operator,
+            _BetweenPair(low_operand, high_operand),
+            dialect=self._dialect,
         )
 
     def between(self, low, high) -> Expression:
@@ -273,10 +333,14 @@ class Column(AliasMixin):
         return self._between(low, high, "NOT BETWEEN")
 
     def is_null(self) -> Expression:
-        return Expression(self.fully_qualified_name, "IS", "NULL")
+        return Expression(
+            self.fully_qualified_name, "IS", "NULL", dialect=self._dialect
+        )
 
     def is_not_null(self) -> Expression:
-        return Expression(self.fully_qualified_name, "IS NOT", "NULL")
+        return Expression(
+            self.fully_qualified_name, "IS NOT", "NULL", dialect=self._dialect
+        )
 
     def _sort(self, direction: str) -> OrderedColumn:
         return OrderedColumn(self.name, direction)

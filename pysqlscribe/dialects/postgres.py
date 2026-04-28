@@ -6,6 +6,8 @@ from pysqlscribe.renderers.postgres import PostgresRenderer
 
 @DialectRegistry.register("postgres")
 class PostgreSQLDialect(Dialect):
+    placeholder_style = "numeric"
+
     def make_renderer(self) -> Renderer:
         return PostgresRenderer(self)
 

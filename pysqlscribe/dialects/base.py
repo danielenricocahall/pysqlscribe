@@ -33,12 +33,23 @@ from pysqlscribe.renderers.base import Renderer
 
 class Dialect(ABC):
     __escape_identifiers_enabled: bool = True
+    placeholder_style: str = "qmark"
 
     def __init__(self):
         self._renderer = self.make_renderer()
 
     @abstractmethod
     def make_renderer(self) -> Renderer: ...
+
+    def make_placeholder(self, index: int) -> str:
+        """Return the placeholder text for the Nth (1-indexed) bound parameter."""
+        if self.placeholder_style == "qmark":
+            return "?"
+        if self.placeholder_style == "numeric":
+            return f"${index}"
+        if self.placeholder_style == "named":
+            return f":{index}"
+        raise ValueError(f"Unknown placeholder_style: {self.placeholder_style}")
 
     def validate(self, current_node: Node, next_node: Node):
         valid_next = self.valid_node_transitions.get(type(current_node), ())
@@ -180,8 +191,8 @@ class Dialect(ABC):
     def escape_identifiers_enabled(self, value: bool):
         self.__escape_identifiers_enabled = value
 
-    def render(self, node: Node) -> str:
-        return self._renderer.render(node)
+    def render(self, node: Node, collector=None) -> str:
+        return self._renderer.render(node, collector)
 
 
 class DialectRegistry:

@@ -16,7 +16,8 @@ from pysqlscribe.ast.nodes import (
     OffsetNode,
     SelectNode,
 )
-from pysqlscribe.column import OrderedColumn
+from pysqlscribe.column import OrderedColumn, Expression
+from pysqlscribe.params import ParamCollector
 from pysqlscribe.protocols import DialectProtocol
 from pysqlscribe.regex_patterns import WILDCARD_REGEX
 
@@ -42,6 +43,7 @@ AND = "AND"
 class Renderer:
     def __init__(self, dialect: DialectProtocol):
         self.dialect = dialect
+        self._collector: ParamCollector | None = None
 
     @property
     def dispatch(self) -> Dict[type[Node], Callable[[Node], str]]:
@@ -60,15 +62,19 @@ class Renderer:
             IntersectNode: self.render_intersect,
         }
 
-    def render(self, node: Node) -> str:
-        query = ""
-        while True:
-            render_method = self.dispatch.get(type(node))
-            query = render_method(node) + " " + query
-            node = node.prev_
-            if node is None:
-                break
-        return query.strip()
+    def render(self, node: Node, collector: ParamCollector | None = None) -> str:
+        self._collector = collector
+        try:
+            query = ""
+            while True:
+                render_method = self.dispatch.get(type(node))
+                query = render_method(node) + " " + query
+                node = node.prev_
+                if node is None:
+                    break
+            return query.strip()
+        finally:
+            self._collector = None
 
     def render_select(self, node: SelectNode) -> str:
         columns = self._resolve_columns(*node.state["columns"])
@@ -79,8 +85,15 @@ class Renderer:
         return f"{FROM} {tables}"
 
     def render_where(self, node: WhereNode) -> str:
-        conditions = f"{f' {AND} '.join(map(str, node.state['conditions']))}"
+        conditions = f" {AND} ".join(
+            self._render_condition(c) for c in node.state["conditions"]
+        )
         return f"{WHERE} {conditions}"
+
+    def _render_condition(self, condition) -> str:
+        if isinstance(condition, Expression):
+            return condition.render(self._collector)
+        return str(condition)
 
     def render_group_by(self, node: GroupByNode) -> str:
         columns = self.dialect.normalize_identifiers_args(node.state["columns"])
@@ -108,7 +121,9 @@ class Renderer:
         )
 
     def render_having(self, node: HavingNode) -> str:
-        conditions = f"{f' {AND} '.join(map(str, node.state['conditions']))}"
+        conditions = f" {AND} ".join(
+            self._render_condition(c) for c in node.state["conditions"]
+        )
         return f"{HAVING} {conditions}"
 
     def render_offset(self, node: OffsetNode) -> str:
