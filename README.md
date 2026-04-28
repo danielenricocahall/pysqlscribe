@@ -12,11 +12,6 @@ Perfect for:
 
 No dependencies. No ORM overhead. Just clean, composable SQL.
 
-# Motivation
-At some point during a project, whether it be personal or professional, you have likely needed to use SQL to interact with a relational database in your application code. In the event they are tables your team owns, you may have used an object-relational mapper (ORM) - such as [SQLAlchemy](https://www.sqlalchemy.org/), [Django](https://docs.djangoproject.com/en/5.2/topics/db/queries/#), [Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy), or [Piccolo](https://github.com/piccolo-orm/piccolo). However, if the operations are primarily read-only (for example, reading and presenting information on tables which are externally updated by another process) integrating an ORM either isn't feasible or would induce more extra complexity than it's worth. In this case, options are fairly limited outside of writing raw SQL queries in code, which introduces a different type of complexity around sanitizing and validating inputs, ensuring proper syntax, and all the other stuff (likely) engineers don't want to expend energy on.
-
-While LLMs are fairly adept at building queries given the quantity of SQL on the internet, it still requires providing the table structure as context via DDL, verbal description, or an external tool that enables table metadata discovery. Additionally, when making updates, coding agents will need to ingest the strings and may make changes, potentially untested.
-
 # Highlights
 - **Dialect Support**: Currently supports `mysql`, `postgres`, `oracle`, and `sqlite`. The dialect is supplied as a string argument — no subclassing required.
 - **Dependency Free**: No external dependencies outside of the Python standard library.
@@ -24,6 +19,11 @@ While LLMs are fairly adept at building queries given the quantity of SQL on the
 - **DDL Parser/Loader**: Can parse DDL files to create `Table` objects, facilitating integration with existing database schema definitions.
 - **Safe by default**: All identifiers and string literals are escaped by default; for untrusted user input in analytical workloads, consider pairing
   with a parameterized driver.
+
+# Motivation
+At some point during a project, whether it be personal or professional, you have likely needed to use SQL to interact with a relational database in your application code. In the event they are tables your team owns, you may have used an object-relational mapper (ORM) - such as [SQLAlchemy](https://www.sqlalchemy.org/), [Django](https://docs.djangoproject.com/en/5.2/topics/db/queries/#), [Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy), or [Piccolo](https://github.com/piccolo-orm/piccolo). However, if the operations are primarily read-only (for example, reading and presenting information on tables which are externally updated by another process) integrating an ORM either isn't feasible or would induce more extra complexity than it's worth. In this case, options are fairly limited outside of writing raw SQL queries in code, which introduces a different type of complexity around sanitizing and validating inputs, ensuring proper syntax, and all the other stuff (likely) engineers don't want to expend energy on.
+
+While LLMs are fairly adept at building queries given the quantity of SQL on the internet, it still requires providing the table structure as context via DDL, verbal description, or an external tool that enables table metadata discovery. Additionally, when making updates, coding agents will need to ingest the strings and may make changes, potentially untested.
 
 # Installation
 To install, you can simply run:
