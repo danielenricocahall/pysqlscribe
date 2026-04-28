@@ -6,10 +6,11 @@ from pysqlscribe.renderers.oracle import OracleRenderer
 
 @DialectRegistry.register("oracle")
 class OracleDialect(Dialect):
-    placeholder_style = "named"
-
     def make_renderer(self) -> Renderer:
         return OracleRenderer(self)
+
+    def make_placeholder(self, index: int) -> str:
+        return f":{index}"
 
     @property
     def valid_node_transitions(self):

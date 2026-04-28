@@ -6,10 +6,11 @@ from pysqlscribe.renderers.postgres import PostgresRenderer
 
 @DialectRegistry.register("postgres")
 class PostgreSQLDialect(Dialect):
-    placeholder_style = "numeric"
-
     def make_renderer(self) -> Renderer:
         return PostgresRenderer(self)
+
+    def make_placeholder(self, index: int) -> str:
+        return f"${index}"
 
     @property
     def valid_node_transitions(self):
