@@ -1,4 +1,4 @@
-from typing import Any, Self, overload
+from typing import Any, Self
 
 from pysqlscribe.exceptions import DuplicateCTENameError, EmptyCTEError
 from pysqlscribe.params import ParamCollector
@@ -21,13 +21,6 @@ class With(Query):
     def as_(self, subquery: str | Query) -> Self:
         self._subqueries[self._current_cte_name] = subquery
         return self
-
-    @overload
-    def build(self, clear: bool = ..., *, parameterize: bool = False) -> str: ...
-    @overload
-    def build(
-        self, clear: bool = ..., *, parameterize: bool = True
-    ) -> tuple[str, list[Any]]: ...
 
     def build(
         self, clear: bool = True, *, parameterize: bool = False

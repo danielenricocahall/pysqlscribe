@@ -1,4 +1,4 @@
-from typing import Any, Self, overload
+from typing import Any, Self
 
 from pysqlscribe.alias import AliasMixin
 from pysqlscribe.ast.base import Node
@@ -139,13 +139,6 @@ class Query(AliasMixin):
         self.node.add(IntersectNode({"query": query, "all": all_}), self.dialect)
         self.node = self.node.next_
         return self
-
-    @overload
-    def build(self, clear: bool = ..., *, parameterize: bool = False) -> str: ...
-    @overload
-    def build(
-        self, clear: bool = ..., *, parameterize: bool = True
-    ) -> tuple[str, list[Any]]: ...
 
     def build(
         self, clear: bool = True, *, parameterize: bool = False
