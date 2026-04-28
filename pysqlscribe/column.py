@@ -44,8 +44,6 @@ def _resolve_value(value, dialect: DialectLike | None = None) -> str:
 class _BetweenPair:
     """Right-hand side of BETWEEN/NOT BETWEEN: two operands joined by AND."""
 
-    __slots__ = ("low", "high")
-
     def __init__(self, low, high):
         self.low = low
         self.high = high

@@ -10,8 +10,6 @@ class Literal:
     rendered as a dialect-appropriate placeholder.
     """
 
-    __slots__ = ("value",)
-
     def __init__(self, value: Any):
         self.value = value
 
