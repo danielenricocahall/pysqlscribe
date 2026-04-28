@@ -65,14 +65,15 @@ class Renderer:
     def render(self, node: Node, collector: ParamCollector | None = None) -> str:
         self._collector = collector
         try:
-            query = ""
-            while True:
-                render_method = self.dispatch.get(type(node))
-                query = render_method(node) + " " + query
-                node = node.prev_
-                if node is None:
-                    break
-            return query.strip()
+            head = node
+            while head.prev_ is not None:
+                head = head.prev_
+            parts = []
+            cur = head
+            while cur is not None:
+                parts.append(self.dispatch[type(cur)](cur))
+                cur = cur.next_
+            return " ".join(parts).strip()
         finally:
             self._collector = None
 
@@ -81,7 +82,9 @@ class Renderer:
         return f"{SELECT} {columns}"
 
     def render_from(self, node: FromNode) -> str:
-        tables = self.dialect.normalize_identifiers_args(node.state["tables"])
+        tables = self.dialect.normalize_identifiers_args(
+            node.state["tables"], collector=self._collector
+        )
         return f"{FROM} {tables}"
 
     def render_where(self, node: WhereNode) -> str:
@@ -96,26 +99,36 @@ class Renderer:
         return str(condition)
 
     def render_group_by(self, node: GroupByNode) -> str:
-        columns = self.dialect.normalize_identifiers_args(node.state["columns"])
+        columns = self.dialect.normalize_identifiers_args(
+            node.state["columns"], collector=self._collector
+        )
         return f"{GROUP_BY} {columns}"
 
     def render_order_by(self, node: OrderByNode) -> str:
         parts = []
         for col in node.state["columns"]:
             if isinstance(col, OrderedColumn):
-                escaped = self.dialect.normalize_identifiers_args([col.name])
+                escaped = self.dialect.normalize_identifiers_args(
+                    [col.name], collector=self._collector
+                )
                 parts.append(f"{escaped} {col.direction}")
             else:
-                parts.append(self.dialect.normalize_identifiers_args([col]))
+                parts.append(
+                    self.dialect.normalize_identifiers_args(
+                        [col], collector=self._collector
+                    )
+                )
         return f"{ORDER_BY} {', '.join(parts)}"
 
     def render_limit(self, node: LimitNode) -> str:
         return f"{LIMIT} {node.state['limit']}"
 
     def render_join(self, node: JoinNode) -> str:
-        table = self.dialect.normalize_identifiers_args(node.table)
+        table = self.dialect.normalize_identifiers_args(
+            node.table, collector=self._collector
+        )
         return f"{node.join_type} {JOIN} {table} " + (
-            f"ON {node.condition}"
+            f"ON {self._render_condition(node.condition)}"
             if node.join_type not in (JoinType.NATURAL, JoinType.CROSS)
             else ""
         )
@@ -129,17 +142,26 @@ class Renderer:
     def render_offset(self, node: OffsetNode) -> str:
         return f"{OFFSET} {node.state['offset']}"
 
+    def _render_combine_query(self, query) -> str:
+        if (
+            self._collector is not None
+            and hasattr(query, "node")
+            and hasattr(query, "dialect")
+        ):
+            return query.dialect.render(query.node, self._collector)
+        return str(query)
+
     def render_union(self, node: UnionNode) -> str:
         operation = UNION_ALL if node.state.get("all", False) else UNION
-        return f"{operation} {node.query}"
+        return f"{operation} {self._render_combine_query(node.query)}"
 
     def render_except(self, node: ExceptNode) -> str:
         operation = EXCEPT_ALL if node.state.get("all", False) else EXCEPT
-        return f"{operation} {node.query}"
+        return f"{operation} {self._render_combine_query(node.query)}"
 
     def render_intersect(self, node: IntersectNode) -> str:
         operation = INTERSECT_ALL if node.state.get("all", False) else INTERSECT
-        return f"{operation} {node.query}"
+        return f"{operation} {self._render_combine_query(node.query)}"
 
     def _resolve_columns(self, *args) -> str:
         if not args:
@@ -147,5 +169,7 @@ class Renderer:
         if isinstance(args[0], str) and WILDCARD_REGEX.match(args[0]):
             columns = args[0]
         else:
-            columns = self.dialect.normalize_identifiers_args(args)
+            columns = self.dialect.normalize_identifiers_args(
+                args, collector=self._collector
+            )
         return columns

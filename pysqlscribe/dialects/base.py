@@ -148,14 +148,14 @@ class Dialect(ABC):
             f"Unsupported value type for SQL literal: {type(value).__name__}"
         )
 
-    def normalize_identifiers_args(self, *args) -> str:
+    def normalize_identifiers_args(self, *args, collector=None) -> str:
         arg = args[0]
         if not isinstance(arg, (list, tuple)):
             arg = [arg]
         identifiers = []
         for identifier in arg:
             if hasattr(identifier, "to_identifier_sql"):
-                identifiers.append(identifier.to_identifier_sql(self))
+                identifiers.append(identifier.to_identifier_sql(self, collector))
             else:
                 identifiers.append(self.validate_identifier(str(identifier).strip()))
 

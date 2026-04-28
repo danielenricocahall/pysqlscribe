@@ -172,5 +172,7 @@ class Query(AliasMixin):
         self.dialect.escape_identifiers_enabled = True
         return self
 
-    def _identifier_body(self, dialect):
+    def _identifier_body(self, dialect, collector=None):
+        if collector is not None:
+            return f"({self.dialect.render(self.node, collector)})"
         return f"({str(self)})"

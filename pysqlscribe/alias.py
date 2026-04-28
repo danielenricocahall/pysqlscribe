@@ -20,8 +20,8 @@ class AliasMixin:
             return f" {AS} {self._alias}"
         return ""
 
-    def to_identifier_sql(self, dialect) -> str:
-        return self._identifier_body(dialect) + self.alias
+    def to_identifier_sql(self, dialect, collector=None) -> str:
+        return self._identifier_body(dialect, collector) + self.alias
 
-    def _identifier_body(self, dialect) -> str:
+    def _identifier_body(self, dialect, collector=None) -> str:
         raise NotImplementedError

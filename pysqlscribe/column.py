@@ -65,7 +65,15 @@ def _render_operand(operand, collector: ParamCollector | None, dialect) -> str:
         return f"({items})"
     if isinstance(operand, Expression):
         return operand.render(collector)
+    if _is_query_like(operand):
+        if collector is not None:
+            return f"({operand.dialect.render(operand.node, collector)})"
+        return f"({operand})"
     return str(operand)
+
+
+def _is_query_like(operand) -> bool:
+    return hasattr(operand, "node") and hasattr(operand, "dialect")
 
 
 class Expression:
@@ -209,12 +217,10 @@ class Column(AliasMixin):
         self, operator: str, other: Iterable[str | int | float] | Subqueryish
     ):
         if isinstance(other, Subqueryish):
-            # Subquery literals are baked into the subquery string at this point
-            # and won't propagate to a parent ParamCollector. Tracked as a follow-up.
             return Expression(
                 self.fully_qualified_name,
                 operator,
-                f"({other})",
+                other,
                 dialect=self._dialect,
             )
         other_list = list(other)
@@ -351,7 +357,7 @@ class Column(AliasMixin):
     def desc(self) -> "OrderedColumn":
         return self._sort("DESC")
 
-    def _identifier_body(self, dialect) -> str:
+    def _identifier_body(self, dialect, collector=None) -> str:
         return dialect.escape_identifier(self.name)
 
 
@@ -363,7 +369,7 @@ class ExpressionColumn(Column):
     def fully_qualified_name(self):
         return self.name
 
-    def _identifier_body(self, dialect) -> str:
+    def _identifier_body(self, dialect, collector=None) -> str:
         return self.name
 
 
@@ -385,23 +391,41 @@ class Case(AliasMixin):
         self._else = value
         return self
 
-    @property
-    def expression(self):
+    def render(self, collector: ParamCollector | None = None, dialect=None) -> str:
         if not self._whens:
             raise ValueError("CASE requires at least one WHEN clause")
         parts = ["CASE"]
         for cond, val in self._whens:
-            parts.append(f"WHEN {cond} THEN {_resolve_value(val)}")
+            cond_sql = (
+                cond.render(collector) if isinstance(cond, Expression) else str(cond)
+            )
+            parts.append(
+                f"WHEN {cond_sql} THEN {self._render_value(val, collector, dialect)}"
+            )
         if self._else is not _UNSET:
-            parts.append(f"ELSE {_resolve_value(self._else)}")
+            parts.append(f"ELSE {self._render_value(self._else, collector, dialect)}")
         parts.append("END")
         return " ".join(parts)
+
+    @staticmethod
+    def _render_value(val, collector: ParamCollector | None, dialect) -> str:
+        if isinstance(val, Column):
+            return val.fully_qualified_name
+        if isinstance(val, Expression):
+            return val.render(collector)
+        if collector is not None:
+            return collector.add(val)
+        return _resolve_value(val, dialect)
+
+    @property
+    def expression(self):
+        return self.render(None)
 
     def __str__(self) -> str:
         return self.expression + self.alias
 
-    def _identifier_body(self, dialect) -> str:
-        return self.expression
+    def _identifier_body(self, dialect, collector=None) -> str:
+        return self.render(collector, dialect)
 
 
 def case_() -> Case:

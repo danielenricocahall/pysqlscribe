@@ -1,5 +1,7 @@
 import pytest
 
+from pysqlscribe.column import case_
+from pysqlscribe.cte import with_
 from pysqlscribe.query import Query
 from pysqlscribe.table import Table
 
@@ -239,3 +241,134 @@ def test_query_class_directly_returns_tuple():
     assert isinstance(sql, str)
     assert isinstance(params, list)
     assert params == []
+
+
+def test_case_then_else_values_bound():
+    table = Table("employees", "salary", "dept", dialect="postgres")
+    band = (
+        case_()
+        .when(table.salary > 100000, 1)
+        .when(table.salary > 50000, 2)
+        .else_(3)
+        .as_("salary_band")
+    )
+    sql, params = table.select(table.dept, band).build(parameterize=True)
+    # 2 condition literals + 2 THEN literals + 1 ELSE literal = 5 placeholders
+    assert sql.count("$") == 5
+    assert "CASE WHEN" in sql
+    assert params == [100000, 1, 50000, 2, 3]
+
+
+def test_case_in_where_threads_collector():
+    table = Table("employees", "salary", "dept", dialect="postgres")
+    sql, params = (
+        table.select("dept")
+        .where(table.salary > 1000)
+        .order_by(case_().when(table.dept == "Sales", 1).else_(2))
+        .build(parameterize=True)
+    )
+    assert params == [1000, "Sales", 1, 2]
+
+
+def test_subquery_in_in_clause_propagates_params():
+    employees = Table("employees", "department_id", dialect="postgres")
+    departments = Table("departments", "id", "name", dialect="postgres")
+    subquery = departments.select("id").where(departments.name == "Engineering")
+    sql, params = (
+        employees.select()
+        .where(employees.department_id.in_(subquery))
+        .build(parameterize=True)
+    )
+    # Engineering is the only literal — and it must be a placeholder, not inlined
+    assert "Engineering" not in sql
+    assert "'" not in sql or sql.count("'") == 0
+    assert "$1" in sql
+    assert params == ["Engineering"]
+
+
+def test_subquery_in_from_propagates_params():
+    inner = Query("postgres")
+    inner.select("name").from_("employees").where("salary > 1000")
+    inner_with_param = Query("postgres")
+    employees = Table("employees", "name", "salary", dialect="postgres")
+    inner_with_param.select("name").from_(employees).where(employees.salary > 1000)
+    outer = Query("postgres")
+    sql, params = (
+        outer.select("*").from_(inner_with_param.as_("e")).build(parameterize=True)
+    )
+    assert "1000" not in sql
+    assert "$1" in sql
+    assert params == [1000]
+
+
+def test_outer_where_after_from_subquery_continues_param_numbering():
+    employees = Table("employees", "name", "salary", dialect="postgres")
+    inner = Query("postgres")
+    inner.select("name", "salary").from_(employees).where(employees.salary > 1000)
+    outer = Query("postgres")
+    outer_table = Table("e", "name", "salary", dialect="postgres")
+    sql, params = (
+        outer.select("name")
+        .from_(inner.as_("e"))
+        .where(outer_table.salary < 5000)
+        .build(parameterize=True)
+    )
+    # First $1 in subquery, $2 in outer where
+    assert "$1" in sql and "$2" in sql
+    assert sql.index("$1") < sql.index("$2")
+    assert params == [1000, 5000]
+
+
+def test_cte_subquery_params_propagate():
+    employees = Table("employees", "name", "salary", dialect="postgres")
+    high_earners = employees.select("name", "salary").where(employees.salary > 100000)
+    sql, params = (
+        with_("HighEarners", dialect="postgres")
+        .as_(high_earners)
+        .select("*")
+        .from_("HighEarners")
+        .build(parameterize=True)
+    )
+    assert "100000" not in sql
+    assert "$1" in sql
+    assert params == [100000]
+
+
+def test_cte_outer_where_after_cte_continues_param_numbering():
+    employees = Table("employees", "name", "salary", dialect="postgres")
+    cte_query = employees.select("name", "salary").where(employees.salary > 100000)
+    high_earners = Table("HighEarners", "name", "salary", dialect="postgres")
+    sql, params = (
+        with_("HighEarners", dialect="postgres")
+        .as_(cte_query)
+        .select("name")
+        .from_(high_earners)
+        .where(high_earners.salary < 500000)
+        .build(parameterize=True)
+    )
+    assert "$1" in sql and "$2" in sql
+    assert sql.index("$1") < sql.index("$2")
+    assert params == [100000, 500000]
+
+
+def test_join_on_literal_is_bound():
+    employees = Table("employees", "id", "role", dialect="postgres")
+    payroll = Table("payroll", "id", "employee_id", dialect="postgres")
+    sql, params = (
+        employees.select("id")
+        .join(payroll, condition=(employees.role == "manager"))
+        .build(parameterize=True)
+    )
+    assert "manager" not in sql
+    assert "$1" in sql
+    assert params == ["manager"]
+
+
+def test_union_propagates_params_from_both_sides():
+    a = Table("employees", "name", "salary", dialect="postgres")
+    b = Table("contractors", "name", "salary", dialect="postgres")
+    left = a.select("name").where(a.salary > 1000)
+    right = b.select("name").where(b.salary > 2000)
+    sql, params = left.union(right).build(parameterize=True)
+    assert "$1" in sql and "$2" in sql
+    assert params == [1000, 2000]
