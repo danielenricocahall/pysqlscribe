@@ -65,7 +65,7 @@ def test_postgres_parameterized_where_roundtrip(postgres_conn):
     sql, params = (
         employees.select("name").where(employees.salary > 150).build(parameterize=True)
     )
-    assert "$1" in sql
+    assert "%s" in sql
     with postgres_conn.cursor() as cur:
         cur.execute(sql, params)
         rows = cur.fetchall()
@@ -79,7 +79,7 @@ def test_postgres_parameterized_in_clause_roundtrip(postgres_conn):
         .where(employees.id.in_([1, 3]))
         .build(parameterize=True)
     )
-    assert "$1" in sql and "$2" in sql
+    assert sql.count("%s") == 2
     with postgres_conn.cursor() as cur:
         cur.execute(sql, params)
         rows = cur.fetchall()

@@ -477,7 +477,7 @@ WITH RECURSIVE EmployeePaths AS (
 ```
 
 ## Parameterized Queries
-By default, `build()` returns a SQL string with all literals inlined (and escaped). For untrusted input — or to hand the result directly to a parameterized DB driver — pass `parameterize=True` to get a `(sql, params)` tuple instead. Placeholders use the dialect's native style: `$N` for Postgres, `?` for MySQL and SQLite, `:N` for Oracle.
+By default, `build()` returns a SQL string with all literals inlined (and escaped). For untrusted input — or to hand the result directly to a parameterized DB driver — pass `parameterize=True` to get a `(sql, params)` tuple instead. Placeholder formats default to the dominant Python driver per dialect: `%s` for Postgres (psycopg) and MySQL (mysql.connector / mysqlclient / aiomysql), `?` for SQLite (stdlib), `:N` for Oracle (oracledb).
 
 ```python
 from pysqlscribe.table import Table
@@ -493,7 +493,7 @@ sql, params = (
 Output:
 
 ```python
-sql    # 'SELECT "salary" FROM "employees" WHERE (employees.salary > $1) AND (employees.bonus < $2)'
+sql    # 'SELECT "salary" FROM "employees" WHERE (employees.salary > %s) AND (employees.bonus < %s)'
 params # [1000, 500]
 ```
 
@@ -519,17 +519,34 @@ sql, params = (
 Output:
 
 ```python
-sql    # 'WITH HighEarners AS (SELECT "name" FROM "employees" WHERE employees.salary > $1) SELECT * FROM "HighEarners" WHERE employees.salary < $2'
+sql    # 'WITH HighEarners AS (SELECT "name" FROM "employees" WHERE employees.salary > %s) SELECT * FROM "HighEarners" WHERE employees.salary < %s'
 params # [100000, 500000]
 ```
 
-The placeholder counter increments across CTE, subquery, and combine-op boundaries, so a single `params` list lines up with placeholders in their order of appearance in the rendered SQL.
+Params are appended in the order their placeholders appear in the rendered SQL, even across CTE, subquery, and combine-op boundaries — so a single ordered `params` list always lines up with the placeholders in the SQL string.
 
 ### Caveats
 
 - **Raw-string conditions are not parameterized.** When you pass a string directly to `where()` (e.g., `.where("salary > 1000")`), the literal stays inlined. Only typed comparisons through `Column` objects (e.g., `table.salary > 1000`) flow into the param list. A `bind()` opt-in helper for raw-string conditions is planned.
 - **Type support follows your driver, not the library.** The default (inline) build path supports `str`, `int`, `float`, and `None`. The parameterized path accepts any value your DB driver can bind — `datetime`, `date`, `Decimal`, `bool`, etc. all work without escaping logic on our side.
 - **`IS NULL` does not bind.** `col.is_null()` always renders as `IS NULL`, never as a placeholder, since drivers don't accept `NULL` via parameter binding for null-checks.
+
+### Using a different driver / placeholder format
+
+The `%s` and `?` defaults match DB-API 2.0 driver conventions, but if you're using a driver that expects a different placeholder format (asyncpg uses `$N`, for example), register a thin dialect subclass:
+
+```python
+from pysqlscribe.dialects.base import DialectRegistry
+from pysqlscribe.dialects.postgres import PostgreSQLDialect
+
+
+@DialectRegistry.register("postgres-asyncpg")
+class AsyncpgPostgresDialect(PostgreSQLDialect):
+    def make_placeholder(self, index: int) -> str:
+        return f"${index}"
+```
+
+Then `Query("postgres-asyncpg")` (or `Table(..., dialect="postgres-asyncpg")`) emits `$1, $2, ...` while the rest of the SQL generation is inherited unchanged.
 
 ## Escaping Identifiers
 By default, all identifiers are escaped using the corresponding dialect's escape character, as can be seen in various examples. This is done to prevent SQL injection attacks and to ensure we handle different column name variations (e.g; a column with a space in the name, a column name which coincides with a keyword). Admittedly, this also makes the queries less aesthetic. If you want to disable this behavior, you can use the `disable_escape_identifiers` method:

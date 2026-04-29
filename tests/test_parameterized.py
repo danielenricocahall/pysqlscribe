@@ -9,8 +9,8 @@ from pysqlscribe.table import Table
 @pytest.mark.parametrize(
     "dialect,placeholder",
     [
-        ("postgres", "$1"),
-        ("mysql", "?"),
+        ("postgres", "%s"),
+        ("mysql", "%s"),
         ("sqlite", "?"),
         ("oracle", ":1"),
     ],
@@ -35,7 +35,7 @@ def test_string_literal_is_bound_not_inlined(dialect):
     assert params == ["O'Brien"]
 
 
-def test_postgres_numeric_placeholders_increment():
+def test_postgres_param_order_matches_sql_order():
     table = Table("employees", "salary", "bonus", dialect="postgres")
     sql, params = (
         table.select("salary")
@@ -43,8 +43,7 @@ def test_postgres_numeric_placeholders_increment():
         .where(table.bonus < 500)
         .build(parameterize=True)
     )
-    assert "$1" in sql and "$2" in sql
-    assert sql.index("$1") < sql.index("$2")
+    assert sql.count("%s") == 2
     assert params == [1000, 500]
 
 
@@ -75,7 +74,7 @@ def test_all_comparison_operators_bind(comparison, operator):
     sql, params = (
         table.select("salary").where(comparison(table.salary)).build(parameterize=True)
     )
-    assert f"employees.salary {operator} $1" in sql
+    assert f"employees.salary {operator} %s" in sql
     assert params == [10]
 
 
@@ -97,7 +96,7 @@ def test_postgres_in_renders_each_position():
         .where(table.department_id.in_([1, 2, 3]))
         .build(parameterize=True)
     )
-    assert sql.endswith("IN ($1, $2, $3)")
+    assert sql.endswith("IN (%s, %s, %s)")
     assert params == [1, 2, 3]
 
 
@@ -108,7 +107,7 @@ def test_not_in_iterable_binds_each_value():
         .where(table.department_id.not_in(["a", "b"]))
         .build(parameterize=True)
     )
-    assert sql.endswith("NOT IN (?, ?)")
+    assert sql.endswith("NOT IN (%s, %s)")
     assert params == ["a", "b"]
 
 
@@ -119,7 +118,7 @@ def test_between_binds_low_and_high():
         .where(table.salary.between(1000, 2000))
         .build(parameterize=True)
     )
-    assert "BETWEEN $1 AND $2" in sql
+    assert "BETWEEN %s AND %s" in sql
     assert params == [1000, 2000]
 
 
@@ -130,7 +129,7 @@ def test_not_between_binds_low_and_high():
         .where(table.salary.not_between(1000, 2000))
         .build(parameterize=True)
     )
-    assert "NOT BETWEEN ? AND ?" in sql
+    assert "NOT BETWEEN %s AND %s" in sql
     assert params == [1000, 2000]
 
 
@@ -139,7 +138,7 @@ def test_like_pattern_is_bound():
     sql, params = (
         table.select("name").where(table.name.like("A%")).build(parameterize=True)
     )
-    assert "LIKE $1" in sql
+    assert "LIKE %s" in sql
     assert params == ["A%"]
 
 
@@ -148,7 +147,7 @@ def test_not_like_pattern_is_bound():
     sql, params = (
         table.select("name").where(table.name.not_like("A%")).build(parameterize=True)
     )
-    assert "NOT LIKE $1" in sql
+    assert "NOT LIKE %s" in sql
     assert params == ["A%"]
 
 
@@ -157,7 +156,7 @@ def test_ilike_pattern_is_bound():
     sql, params = (
         table.select("name").where(table.name.ilike("a%")).build(parameterize=True)
     )
-    assert "ILIKE $1" in sql
+    assert "ILIKE %s" in sql
     assert params == ["a%"]
 
 
@@ -189,7 +188,7 @@ def test_not_expression_binds_inner():
         table.select("salary").where(~(table.salary > 1000)).build(parameterize=True)
     )
     assert "NOT" in sql
-    assert "$1" in sql
+    assert "%s" in sql
     assert params == [1000]
 
 
@@ -202,7 +201,7 @@ def test_having_clause_also_parameterized():
         .build(parameterize=True)
     )
     assert "HAVING" in sql
-    assert "$1" in sql
+    assert "%s" in sql
     assert params == [1000]
 
 
@@ -252,7 +251,7 @@ def test_case_then_else_values_bound():
     )
     sql, params = table.select(table.dept, band).build(parameterize=True)
     # 2 condition literals + 2 THEN literals + 1 ELSE literal = 5 placeholders
-    assert sql.count("$") == 5
+    assert sql.count("%s") == 5
     assert "CASE WHEN" in sql
     assert params == [100000, 1, 50000, 2, 3]
 
@@ -279,8 +278,7 @@ def test_subquery_in_in_clause_propagates_params():
     )
     # Engineering is the only literal — and it must be a placeholder, not inlined
     assert "Engineering" not in sql
-    assert "'" not in sql or sql.count("'") == 0
-    assert "$1" in sql
+    assert "%s" in sql
     assert params == ["Engineering"]
 
 
@@ -295,11 +293,11 @@ def test_subquery_in_from_propagates_params():
         outer.select("*").from_(inner_with_param.as_("e")).build(parameterize=True)
     )
     assert "1000" not in sql
-    assert "$1" in sql
+    assert "%s" in sql
     assert params == [1000]
 
 
-def test_outer_where_after_from_subquery_continues_param_numbering():
+def test_outer_where_after_from_subquery_maintains_param_order():
     employees = Table("employees", "name", "salary", dialect="postgres")
     inner = Query("postgres")
     inner.select("name", "salary").from_(employees).where(employees.salary > 1000)
@@ -311,9 +309,7 @@ def test_outer_where_after_from_subquery_continues_param_numbering():
         .where(outer_table.salary < 5000)
         .build(parameterize=True)
     )
-    # First $1 in subquery, $2 in outer where
-    assert "$1" in sql and "$2" in sql
-    assert sql.index("$1") < sql.index("$2")
+    assert sql.count("%s") == 2
     assert params == [1000, 5000]
 
 
@@ -328,11 +324,11 @@ def test_cte_subquery_params_propagate():
         .build(parameterize=True)
     )
     assert "100000" not in sql
-    assert "$1" in sql
+    assert "%s" in sql
     assert params == [100000]
 
 
-def test_cte_outer_where_after_cte_continues_param_numbering():
+def test_cte_outer_where_after_cte_maintains_param_order():
     employees = Table("employees", "name", "salary", dialect="postgres")
     cte_query = employees.select("name", "salary").where(employees.salary > 100000)
     high_earners = Table("HighEarners", "name", "salary", dialect="postgres")
@@ -344,8 +340,7 @@ def test_cte_outer_where_after_cte_continues_param_numbering():
         .where(high_earners.salary < 500000)
         .build(parameterize=True)
     )
-    assert "$1" in sql and "$2" in sql
-    assert sql.index("$1") < sql.index("$2")
+    assert sql.count("%s") == 2
     assert params == [100000, 500000]
 
 
@@ -358,7 +353,7 @@ def test_join_on_literal_is_bound():
         .build(parameterize=True)
     )
     assert "manager" not in sql
-    assert "$1" in sql
+    assert "%s" in sql
     assert params == ["manager"]
 
 
@@ -368,5 +363,5 @@ def test_union_propagates_params_from_both_sides():
     left = a.select("name").where(a.salary > 1000)
     right = b.select("name").where(b.salary > 2000)
     sql, params = left.union(right).build(parameterize=True)
-    assert "$1" in sql and "$2" in sql
+    assert sql.count("%s") == 2
     assert params == [1000, 2000]

@@ -10,7 +10,7 @@ class PostgreSQLDialect(Dialect):
         return PostgresRenderer(self)
 
     def make_placeholder(self, index: int) -> str:
-        return f"${index}"
+        return "%s"
 
     @property
     def valid_node_transitions(self):
