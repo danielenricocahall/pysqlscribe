@@ -477,7 +477,7 @@ WITH RECURSIVE EmployeePaths AS (
 ```
 
 ## Parameterized Queries
-By default, `build()` returns a SQL string with all literals inlined (and escaped). For untrusted input — or to hand the result directly to a parameterized DB driver — pass `parameterize=True` to get a `(sql, params)` tuple instead. Placeholder formats default to the dominant Python driver per dialect: `%s` for Postgres (psycopg) and MySQL (mysql.connector / mysqlclient / aiomysql), `?` for SQLite (stdlib), `:N` for Oracle (oracledb).
+By default, `build()` returns a SQL string with all literals inlined (and escaped). For untrusted input, or to hand the result directly to a parameterized DB driver (e.g., `psycopg2`), pass `parameterize=True` to get a `(sql, params)` tuple instead. Placeholder formats default to the dominant Python driver per dialect: `%s` for Postgres (psycopg) and MySQL (`mysql.connector` / `mysqlclient` / `aiomysql`), `?` for SQLite (stdlib), `:N` for Oracle (`oracledb`).
 
 ```python
 from pysqlscribe.table import Table
@@ -497,7 +497,7 @@ sql    # 'SELECT "salary" FROM "employees" WHERE (employees.salary > %s) AND (em
 params # [1000, 500]
 ```
 
-The same flag works for `Table`, `Schema`-derived queries, and `With` (CTE) builders. Literal values flow through every supported expression form — comparisons, `IN`/`NOT IN` (iterables and subqueries), `BETWEEN`, `LIKE` family, `CASE` THEN/ELSE values, JOIN ON conditions, and across `UNION`/`EXCEPT`/`INTERSECT` boundaries — into a single ordered `params` list.
+The same flag works for `Table`, `Schema`-derived queries, and `With` (CTE) builders. Literal values flow through every supported expression form: comparisons, `IN`/`NOT IN` (iterables and subqueries), `BETWEEN`, `LIKE` family, `CASE` THEN/ELSE values, JOIN ON conditions, and across `UNION`/`EXCEPT`/`INTERSECT` boundaries into a single ordered `params` list.
 
 ```python
 from pysqlscribe.cte import with_
@@ -533,7 +533,7 @@ Params are appended in the order their placeholders appear in the rendered SQL, 
 
 ### Using a different driver / placeholder format
 
-The `%s` and `?` defaults match DB-API 2.0 driver conventions, but if you're using a driver that expects a different placeholder format (asyncpg uses `$N`, for example), register a thin dialect subclass:
+The `%s` and `?` defaults match DB-API 2.0 driver conventions, but if you're using a driver that expects a different placeholder format (e.g., asyncpg uses `$N`), register a thin dialect subclass:
 
 ```python
 from pysqlscribe.dialects.base import DialectRegistry
