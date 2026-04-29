@@ -74,6 +74,19 @@ def _is_query_like(operand) -> bool:
     return hasattr(operand, "node") and hasattr(operand, "dialect")
 
 
+def _to_operand(value):
+    """Normalize a user-supplied value into something _render_operand understands.
+
+    Columns become their fully-qualified-name string; Expressions pass through;
+    everything else is wrapped as a deferred Literal.
+    """
+    if isinstance(value, Column):
+        return value.fully_qualified_name
+    if isinstance(value, Expression):
+        return value
+    return Literal(value)
+
+
 class Expression:
     def __init__(
         self, left, operator: str, right, *, dialect: DialectLike | None = None
@@ -317,16 +330,10 @@ class Column(AliasMixin):
         return self._comparison_expression("ILIKE", pattern)
 
     def _between(self, low, high, operator) -> Expression:
-        low_operand = low if isinstance(low, (Column, Expression)) else Literal(low)
-        high_operand = high if isinstance(high, (Column, Expression)) else Literal(high)
-        if isinstance(low_operand, Column):
-            low_operand = low_operand.fully_qualified_name
-        if isinstance(high_operand, Column):
-            high_operand = high_operand.fully_qualified_name
         return Expression(
             self.fully_qualified_name,
             operator,
-            _BetweenPair(low_operand, high_operand),
+            _BetweenPair(_to_operand(low), _to_operand(high)),
             dialect=self._dialect,
         )
 
@@ -407,13 +414,7 @@ class Case(AliasMixin):
 
     @staticmethod
     def _render_value(val, collector: ParamCollector | None, dialect) -> str:
-        if isinstance(val, Column):
-            return val.fully_qualified_name
-        if isinstance(val, Expression):
-            return val.render(collector)
-        if collector is not None:
-            return collector.add(val)
-        return _resolve_value(val, dialect)
+        return _render_operand(_to_operand(val), collector, dialect)
 
     @property
     def expression(self):
