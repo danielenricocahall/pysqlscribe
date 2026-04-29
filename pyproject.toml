@@ -19,6 +19,15 @@ dev = [
     "pytest>=8.3.4",
     "ruff>=0.9.2",
 ]
+dev-integration = [
+    "psycopg[binary]>=3.2.0",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: end-to-end smoke tests that hit a real DB driver (sqlite stdlib, postgres via PYSQLSCRIBE_POSTGRES_DSN)",
+]
+addopts = "-m 'not integration'"
 
 
 [build-system]
