@@ -32,3 +32,34 @@ jobs:
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           uv run pytest tests
+
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: pysqlscribe
+          POSTGRES_PASSWORD: pysqlscribe
+          POSTGRES_DB: pysqlscribe
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+      - name: Install dependencies (with integration extras)
+        run: uv sync --dev --group dev-integration
+      - name: Run integration smoke tests
+        env:
+          PYSQLSCRIBE_POSTGRES_DSN: postgresql://pysqlscribe:pysqlscribe@localhost:5432/pysqlscribe
+        run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
+          uv run pytest -m integration tests/integration
