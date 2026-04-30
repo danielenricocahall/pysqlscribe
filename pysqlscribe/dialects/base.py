@@ -19,6 +19,7 @@ from pysqlscribe.ast.nodes import (
 )
 from pysqlscribe.env_utils import str2bool
 from pysqlscribe.exceptions import DialectValidationError
+from pysqlscribe.params import ansi_escape_value
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
     AGGREGATE_IDENTIFIER_REGEX,
@@ -132,14 +133,13 @@ class Dialect(ABC):
     def _escape_identifier(self, identifier: str): ...
 
     def escape_value(self, value) -> str:
-        """Render a literal value as SQL, with dialect-appropriate escaping."""
-        if isinstance(value, str):
-            return "'" + value.replace("'", "''") + "'"
-        if isinstance(value, (int, float)):
-            return str(value)
-        raise NotImplementedError(
-            f"Unsupported value type for SQL literal: {type(value).__name__}"
-        )
+        """Render a literal value as SQL, with dialect-appropriate escaping.
+
+        Default rendering follows ANSI SQL (booleans as ``TRUE``/``FALSE``,
+        ISO format for dates and datetimes); dialects whose engines lack a
+        native boolean type override this to emit ``1``/``0``.
+        """
+        return ansi_escape_value(value)
 
     def normalize_identifiers_args(self, *args, collector=None) -> str:
         arg = args[0]

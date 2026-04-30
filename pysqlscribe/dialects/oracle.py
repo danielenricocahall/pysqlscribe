@@ -27,3 +27,11 @@ class OracleDialect(Dialect):
 
     def _escape_identifier(self, identifier: str) -> str:
         return f'"{identifier}"'
+
+    def escape_value(self, value) -> str:
+        # Oracle had no native BOOLEAN SQL type (in DML / table columns) before
+        # 23c; the long-standing convention is to use NUMBER(1) with 1 / 0, so
+        # render booleans that way for the inline path.
+        if isinstance(value, bool):
+            return "1" if value else "0"
+        return super().escape_value(value)
