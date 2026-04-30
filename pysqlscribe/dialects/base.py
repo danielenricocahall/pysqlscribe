@@ -1,5 +1,3 @@
-import datetime
-import decimal
 import os
 from abc import ABC, abstractmethod
 from typing import Dict
@@ -21,6 +19,7 @@ from pysqlscribe.ast.nodes import (
 )
 from pysqlscribe.env_utils import str2bool
 from pysqlscribe.exceptions import DialectValidationError
+from pysqlscribe.params import ansi_escape_value
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
     AGGREGATE_IDENTIFIER_REGEX,
@@ -136,29 +135,11 @@ class Dialect(ABC):
     def escape_value(self, value) -> str:
         """Render a literal value as SQL, with dialect-appropriate escaping.
 
-        Default boolean rendering follows ANSI SQL (`TRUE` / `FALSE`); dialects
-        whose engines lack a native boolean type override this to emit `1` / `0`.
+        Default rendering follows ANSI SQL (booleans as ``TRUE``/``FALSE``,
+        ISO format for dates and datetimes); dialects whose engines lack a
+        native boolean type override this to emit ``1``/``0``.
         """
-        if isinstance(value, str):
-            return "'" + value.replace("'", "''") + "'"
-        # Order matters: `bool` is a subclass of `int`, and `datetime` is a
-        # subclass of `date`, so the more specific types must be checked first.
-        if isinstance(value, bool):
-            return "TRUE" if value else "FALSE"
-        if isinstance(value, (int, float, decimal.Decimal)):
-            return str(value)
-        if isinstance(value, datetime.datetime):
-            return "'" + value.isoformat(sep=" ") + "'"
-        if isinstance(value, datetime.date):
-            return "'" + value.isoformat() + "'"
-        if value is None:
-            return "NULL"
-        # TODO: dialect-specific bytes literals (E'\\x...' / 0x... / X'...' /
-        # HEXTORAW('...')) are out of scope; add when a real driver/use-case
-        # forces the choice.
-        raise NotImplementedError(
-            f"Unsupported value type for SQL literal: {type(value).__name__}"
-        )
+        return ansi_escape_value(value)
 
     def normalize_identifiers_args(self, *args, collector=None) -> str:
         arg = args[0]

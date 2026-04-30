@@ -5,7 +5,7 @@ from typing import Self, Iterable, Protocol, runtime_checkable
 from pysqlscribe.alias import AliasMixin
 from pysqlscribe.exceptions import InvalidColumnsError
 from pysqlscribe.functions import ScalarFunctions
-from pysqlscribe.params import Literal, ParamCollector
+from pysqlscribe.params import Literal, ParamCollector, ansi_escape_value
 from pysqlscribe.regex_patterns import (
     VALID_IDENTIFIER_REGEX,
     AGGREGATE_IDENTIFIER_REGEX,
@@ -19,31 +19,6 @@ class DialectLike(Protocol):
     def escape_value(self, value) -> str: ...
 
 
-def _ansi_escape_value(value) -> str:
-    if isinstance(value, str):
-        return "'" + value.replace("'", "''") + "'"
-    # `bool` must be checked before `int` because `isinstance(True, int)` is True;
-    # ANSI SQL renders booleans as the keywords TRUE / FALSE.
-    if isinstance(value, bool):
-        return "TRUE" if value else "FALSE"
-    if isinstance(value, (int, float, decimal.Decimal)):
-        return str(value)
-    # `datetime` must come before `date` because `datetime.datetime` subclasses
-    # `datetime.date`, so the order matters for the same MRO reason as bool/int.
-    if isinstance(value, datetime.datetime):
-        return "'" + value.isoformat(sep=" ") + "'"
-    if isinstance(value, datetime.date):
-        return "'" + value.isoformat() + "'"
-    if value is None:
-        return "NULL"
-    # TODO: bytes literals are dialect-specific (E'\\x...' for postgres,
-    # 0x... for mysql, X'...' for sqlite, HEXTORAW('...') for oracle); add when
-    # there's a real use-case to motivate the per-dialect rendering.
-    raise NotImplementedError(
-        f"Unsupported value type for SQL literal: {type(value).__name__}"
-    )
-
-
 def _resolve_value(value, dialect: DialectLike | None = None) -> str:
     """Render a CASE/comparison value: columns become fqn, pre-built expressions
     stringify as-is, and literals go through dialect escaping (ANSI fallback)."""
@@ -53,7 +28,7 @@ def _resolve_value(value, dialect: DialectLike | None = None) -> str:
         return str(value)
     if dialect is not None:
         return dialect.escape_value(value)
-    return _ansi_escape_value(value)
+    return ansi_escape_value(value)
 
 
 class _BetweenPair:

@@ -8,8 +8,9 @@ from decimal import Decimal
 
 import pytest
 
-from pysqlscribe.column import Column, _ansi_escape_value
+from pysqlscribe.column import Column
 from pysqlscribe.dialects.base import DialectRegistry
+from pysqlscribe.params import ansi_escape_value
 from pysqlscribe.table import Table
 
 
@@ -71,8 +72,8 @@ def test_postgres_bool_is_not_rendered_as_int():
 
 def test_ansi_fallback_bool_is_not_rendered_as_int():
     """Same MRO trap, exercised against the dialect-less ANSI fallback path."""
-    assert _ansi_escape_value(True) == "TRUE"
-    assert _ansi_escape_value(False) == "FALSE"
+    assert ansi_escape_value(True) == "TRUE"
+    assert ansi_escape_value(False) == "FALSE"
 
 
 # ---------------------------------------------------------------------------
