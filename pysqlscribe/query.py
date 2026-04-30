@@ -36,9 +36,9 @@ class Query(AliasMixin):
     def dialect(self) -> Dialect:
         return self._dialect
 
-    def select(self, *args) -> Self:
+    def select(self, *args, distinct: bool = False) -> Self:
         if not self.node:
-            self.node = SelectNode({"columns": list(args)})
+            self.node = SelectNode({"columns": list(args), "distinct": distinct})
         return self
 
     def from_(self, *args) -> Self:

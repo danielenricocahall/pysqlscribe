@@ -324,6 +324,22 @@ Output:
 SELECT "first_name" AS name FROM "employee" AS e
 ```
 
+## DISTINCT
+Pass `distinct=True` to `select` to emit `SELECT DISTINCT`:
+
+```python
+from pysqlscribe.table import Table
+
+employee_table = Table("employee", "department", dialect="postgres")
+query = employee_table.select("department", distinct=True).build()
+```
+
+Output:
+
+```postgresql
+SELECT DISTINCT "department" FROM "employee"
+```
+
 ## NULL Checks
 Columns support `is_null()` and `is_not_null()` for NULL comparisons:
 

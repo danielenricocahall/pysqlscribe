@@ -22,6 +22,7 @@ from pysqlscribe.protocols import DialectProtocol
 from pysqlscribe.regex_patterns import WILDCARD_REGEX
 
 SELECT = "SELECT"
+DISTINCT = "DISTINCT"
 FROM = "FROM"
 WHERE = "WHERE"
 LIMIT = "LIMIT"
@@ -76,7 +77,8 @@ class Renderer:
 
     def render_select(self, node: SelectNode, collector: ParamCollector | None) -> str:
         columns = self._resolve_columns(*node.state["columns"], collector=collector)
-        return f"{SELECT} {columns}"
+        prefix = f"{DISTINCT} " if node.state.get("distinct") else ""
+        return f"{SELECT} {prefix}{columns}"
 
     def render_from(self, node: FromNode, collector: ParamCollector | None) -> str:
         tables = self.dialect.normalize_identifiers_args(
