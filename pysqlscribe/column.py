@@ -1,3 +1,5 @@
+import datetime
+import decimal
 from typing import Self, Iterable, Protocol, runtime_checkable
 
 from pysqlscribe.alias import AliasMixin
@@ -20,10 +22,23 @@ class DialectLike(Protocol):
 def _ansi_escape_value(value) -> str:
     if isinstance(value, str):
         return "'" + value.replace("'", "''") + "'"
-    if isinstance(value, (int, float)):
+    # `bool` must be checked before `int` because `isinstance(True, int)` is True;
+    # ANSI SQL renders booleans as the keywords TRUE / FALSE.
+    if isinstance(value, bool):
+        return "TRUE" if value else "FALSE"
+    if isinstance(value, (int, float, decimal.Decimal)):
         return str(value)
+    # `datetime` must come before `date` because `datetime.datetime` subclasses
+    # `datetime.date`, so the order matters for the same MRO reason as bool/int.
+    if isinstance(value, datetime.datetime):
+        return "'" + value.isoformat(sep=" ") + "'"
+    if isinstance(value, datetime.date):
+        return "'" + value.isoformat() + "'"
     if value is None:
         return "NULL"
+    # TODO: bytes literals are dialect-specific (E'\\x...' for postgres,
+    # 0x... for mysql, X'...' for sqlite, HEXTORAW('...') for oracle); add when
+    # there's a real use-case to motivate the per-dialect rendering.
     raise NotImplementedError(
         f"Unsupported value type for SQL literal: {type(value).__name__}"
     )
@@ -200,7 +215,10 @@ class Column(AliasMixin):
                 other.fully_qualified_name,
                 dialect=self._dialect,
             )
-        if isinstance(other, (str, int, float)):
+        if isinstance(
+            other,
+            (str, int, float, bool, decimal.Decimal, datetime.date, datetime.datetime),
+        ):
             return Expression(
                 self.fully_qualified_name,
                 operator,

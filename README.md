@@ -528,7 +528,7 @@ Params are appended in the order their placeholders appear in the rendered SQL, 
 ### Caveats
 
 - **Raw-string conditions are not parameterized.** When you pass a string directly to `where()` (e.g., `.where("salary > 1000")`), the literal stays inlined. Only typed comparisons through `Column` objects (e.g., `table.salary > 1000`) flow into the param list. A `bind()` opt-in helper for raw-string conditions is planned.
-- **Type support follows your driver, not the library.** The default (inline) build path supports `str`, `int`, `float`, and `None`. The parameterized path accepts any value your DB driver can bind — `datetime`, `date`, `Decimal`, `bool`, etc. all work without escaping logic on our side.
+- **Type support.** The inline build path supports `str`, `int`, `float`, `bool`, `None`, `datetime.date`, `datetime.datetime`, and `decimal.Decimal`. Booleans render as `TRUE` / `FALSE` for Postgres (ANSI standard) and as `1` / `0` for MySQL, SQLite, and Oracle, since those engines either lack a native boolean type or canonically store booleans as integers. The parameterized path additionally accepts anything else your DB driver can bind (e.g. `bytes`, `uuid.UUID`).
 - **`IS NULL` does not bind.** `col.is_null()` always renders as `IS NULL`, never as a placeholder, since drivers don't accept `NULL` via parameter binding for null-checks.
 
 ### Using a different driver / placeholder format

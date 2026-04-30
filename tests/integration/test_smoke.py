@@ -3,6 +3,8 @@ driver, assert the rows come back. Catches placeholder-format and binding
 regressions that pure-string assertions can't see.
 """
 
+import datetime
+
 import pytest
 
 from pysqlscribe.table import Table
@@ -16,6 +18,20 @@ def test_sqlite_inline_build_executes(sqlite_conn):
     sql = employees.select("name").where(employees.salary > 150).build()
     rows = sqlite_conn.execute(sql).fetchall()
     assert sorted(name for (name,) in rows) == ["Bob", "Carol"]
+
+
+def test_sqlite_inline_build_with_datetime_literal_executes(sqlite_conn):
+    """Round-trip a datetime literal through the inline build path: proves the
+    rendered `'YYYY-MM-DD HH:MM:SS'` string is something a real driver accepts.
+    """
+    events = Table("events", "id", "created_at", dialect="sqlite")
+    sql = (
+        events.select("id")
+        .where(events.created_at == datetime.datetime(2026, 4, 28, 14, 30, 0))
+        .build()
+    )
+    rows = sqlite_conn.execute(sql).fetchall()
+    assert [row_id for (row_id,) in rows] == [2]
 
 
 def test_postgres_inline_build_executes(postgres_conn):

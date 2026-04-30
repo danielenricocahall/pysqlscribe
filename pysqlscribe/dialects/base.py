@@ -1,3 +1,5 @@
+import datetime
+import decimal
 import os
 from abc import ABC, abstractmethod
 from typing import Dict
@@ -132,11 +134,28 @@ class Dialect(ABC):
     def _escape_identifier(self, identifier: str): ...
 
     def escape_value(self, value) -> str:
-        """Render a literal value as SQL, with dialect-appropriate escaping."""
+        """Render a literal value as SQL, with dialect-appropriate escaping.
+
+        Default boolean rendering follows ANSI SQL (`TRUE` / `FALSE`); dialects
+        whose engines lack a native boolean type override this to emit `1` / `0`.
+        """
         if isinstance(value, str):
             return "'" + value.replace("'", "''") + "'"
-        if isinstance(value, (int, float)):
+        # Order matters: `bool` is a subclass of `int`, and `datetime` is a
+        # subclass of `date`, so the more specific types must be checked first.
+        if isinstance(value, bool):
+            return "TRUE" if value else "FALSE"
+        if isinstance(value, (int, float, decimal.Decimal)):
             return str(value)
+        if isinstance(value, datetime.datetime):
+            return "'" + value.isoformat(sep=" ") + "'"
+        if isinstance(value, datetime.date):
+            return "'" + value.isoformat() + "'"
+        if value is None:
+            return "NULL"
+        # TODO: dialect-specific bytes literals (E'\\x...' / 0x... / X'...' /
+        # HEXTORAW('...')) are out of scope; add when a real driver/use-case
+        # forces the choice.
         raise NotImplementedError(
             f"Unsupported value type for SQL literal: {type(value).__name__}"
         )

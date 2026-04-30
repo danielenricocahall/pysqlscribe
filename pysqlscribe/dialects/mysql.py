@@ -19,4 +19,9 @@ class MySQLDialect(Dialect):
         if isinstance(value, str):
             escaped = value.replace("\\", "\\\\").replace("'", "''")
             return f"'{escaped}'"
+        # MySQL accepts TRUE / FALSE as aliases for 1 / 0, but stores booleans
+        # as TINYINT(1); rendering 1 / 0 keeps the inline output canonical and
+        # avoids depending on the alias. (Must precede int dispatch upstream.)
+        if isinstance(value, bool):
+            return "1" if value else "0"
         return super().escape_value(value)

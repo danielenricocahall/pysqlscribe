@@ -20,6 +20,15 @@ def sqlite_conn():
         "INSERT INTO employees VALUES (?, ?, ?)",
         [(1, "Alice", 100), (2, "Bob", 200), (3, "Carol", 300)],
     )
+    cur.execute("CREATE TABLE events (id INTEGER, created_at TEXT)")
+    cur.executemany(
+        "INSERT INTO events VALUES (?, ?)",
+        [
+            (1, "2026-04-27 09:00:00"),
+            (2, "2026-04-28 14:30:00"),
+            (3, "2026-04-29 12:00:00"),
+        ],
+    )
     conn.commit()
     yield conn
     conn.close()
