@@ -19,8 +19,8 @@ class Table(Query, AliasMixin):
         self.schema = schema
         self.columns = columns
 
-    def select(self, *columns) -> Self:
-        return super().select(*columns).from_(self)
+    def select(self, *columns, distinct: bool = False) -> Self:
+        return super().select(*columns, distinct=distinct).from_(self)
 
     def order_by(self, *columns) -> Self:
         return super().order_by(*columns)
