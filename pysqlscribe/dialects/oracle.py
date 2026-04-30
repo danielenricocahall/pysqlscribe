@@ -9,6 +9,9 @@ class OracleDialect(Dialect):
     def make_renderer(self) -> Renderer:
         return OracleRenderer(self)
 
+    def make_placeholder(self, index: int) -> str:
+        return f":{index}"
+
     @property
     def valid_node_transitions(self):
         # Oracle's pagination is `[OFFSET n ROWS] FETCH NEXT m ROWS ONLY`, so

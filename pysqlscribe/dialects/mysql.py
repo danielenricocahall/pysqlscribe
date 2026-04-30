@@ -7,6 +7,9 @@ class MySQLDialect(Dialect):
     def make_renderer(self) -> Renderer:
         return MySQLRenderer(self)
 
+    def make_placeholder(self, index: int) -> str:
+        return "%s"
+
     def _escape_identifier(self, identifier: str) -> str:
         return f"`{identifier}`"
 

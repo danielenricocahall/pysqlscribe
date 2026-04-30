@@ -8,5 +8,8 @@ class SQLiteDialect(Dialect):
     def make_renderer(self) -> Renderer:
         return SqliteRenderer(self)
 
+    def make_placeholder(self, index: int) -> str:
+        return "?"
+
     def _escape_identifier(self, identifier: str) -> str:
         return f'"{identifier}"'

@@ -9,6 +9,9 @@ class PostgreSQLDialect(Dialect):
     def make_renderer(self) -> Renderer:
         return PostgresRenderer(self)
 
+    def make_placeholder(self, index: int) -> str:
+        return "%s"
+
     @property
     def valid_node_transitions(self):
         # Postgres allows bare OFFSET (without LIMIT) wherever LIMIT is allowed.

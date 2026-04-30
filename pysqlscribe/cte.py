@@ -1,6 +1,7 @@
-from typing import Self
+from typing import Any, Self
 
 from pysqlscribe.exceptions import DuplicateCTENameError, EmptyCTEError
+from pysqlscribe.params import ParamCollector
 from pysqlscribe.query import Query
 
 WITH = "WITH"
@@ -15,26 +16,44 @@ class With(Query):
         super().__init__(dialect)
         self._current_cte_name = cte_name
         self.recursive = recursive
-        self._subqueries = {}
+        self._subqueries: dict[str, str | Query] = {}
 
     def as_(self, subquery: str | Query) -> Self:
-        if isinstance(subquery, Query):
-            subquery = str(subquery)
         self._subqueries[self._current_cte_name] = subquery
         return self
 
-    def build(self, clear: bool = True) -> str:
+    def build(
+        self, clear: bool = True, *, parameterize: bool = False
+    ) -> str | tuple[str, list[Any]]:
         if not self._subqueries:
             raise EmptyCTEError(
                 f"No subqueries defined for WITH clause '{self._current_cte_name}'"
             )
-        query = super().build(clear=clear)
         with_block = f"{WITH if not self.recursive else WITH_RECURSIVE}"
+        if parameterize:
+            collector = ParamCollector(self.dialect)
+            cte_queries = ", ".join(
+                f"{name} {AS} ({self._render_subquery(sub, collector)})"
+                for name, sub in self._subqueries.items()
+            )
+            outer = self.dialect.render(self.node, collector)
+            if clear:
+                self.node = None
+            return f"{with_block} {cte_queries} {outer}".strip(), collector.params
         cte_queries = ", ".join(
-            f"{cte_name} {AS} ({subquery})"
-            for cte_name, subquery in self._subqueries.items()
+            f"{name} {AS} ({self._render_subquery(sub, None)})"
+            for name, sub in self._subqueries.items()
         )
-        return f"{with_block} {cte_queries} {query}"
+        outer = super().build(clear=clear)
+        return f"{with_block} {cte_queries} {outer}"
+
+    @staticmethod
+    def _render_subquery(subquery, collector: ParamCollector | None) -> str:
+        if isinstance(subquery, Query):
+            if collector is not None:
+                return subquery.dialect.render(subquery.node, collector)
+            return str(subquery)
+        return subquery
 
     def with_(self, cte_name: str) -> Self:
         if cte_name in self._subqueries:

@@ -19,6 +19,7 @@ No dependencies. No ORM overhead. Just clean, composable SQL.
 - **DDL Parser/Loader**: Can parse DDL files to create `Table` objects, facilitating integration with existing database schema definitions.
 - **Safe by default**: All identifiers and string literals are escaped by default; for untrusted user input in analytical workloads, consider pairing
   with a parameterized driver.
+- **Parameterized queries**: Opt-in `build(parameterize=True)` returns a `(sql, params)` tuple with dialect-appropriate placeholders, ready to hand directly to your DB driver.
 
 # Motivation
 At some point during a project, whether it be personal or professional, you have likely needed to use SQL to interact with a relational database in your application code. In the event they are tables your team owns, you may have used an object-relational mapper (ORM) - such as [SQLAlchemy](https://www.sqlalchemy.org/), [Django](https://docs.djangoproject.com/en/5.2/topics/db/queries/#), [Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy), or [Piccolo](https://github.com/piccolo-orm/piccolo). However, if the operations are primarily read-only (for example, reading and presenting information on tables which are externally updated by another process) integrating an ORM either isn't feasible or would induce more extra complexity than it's worth. In this case, options are fairly limited outside of writing raw SQL queries in code, which introduces a different type of complexity around sanitizing and validating inputs, ensuring proper syntax, and all the other stuff (likely) engineers don't want to expend energy on.
@@ -475,6 +476,78 @@ WITH RECURSIVE EmployeePaths AS (
         ) SELECT * FROM `EmployeePaths` ORDER BY `level`
 ```
 
+## Parameterized Queries
+By default, `build()` returns a SQL string with all literals inlined (and escaped). For untrusted input, or to hand the result directly to a parameterized DB driver (e.g., `psycopg2`), pass `parameterize=True` to get a `(sql, params)` tuple instead. Placeholder formats default to the dominant Python driver per dialect: `%s` for Postgres (psycopg) and MySQL (`mysql.connector` / `mysqlclient` / `aiomysql`), `?` for SQLite (stdlib), `:N` for Oracle (`oracledb`).
+
+```python
+from pysqlscribe.table import Table
+
+table = Table("employees", "salary", "bonus", dialect="postgres")
+sql, params = (
+    table.select("salary")
+    .where((table.salary > 1000) & (table.bonus < 500))
+    .build(parameterize=True)
+)
+```
+
+Output:
+
+```python
+sql    # 'SELECT "salary" FROM "employees" WHERE (employees.salary > %s) AND (employees.bonus < %s)'
+params # [1000, 500]
+```
+
+The same flag works for `Table`, `Schema`-derived queries, and `With` (CTE) builders. Literal values flow through every supported expression form: comparisons, `IN`/`NOT IN` (iterables and subqueries), `BETWEEN`, `LIKE` family, `CASE` THEN/ELSE values, JOIN ON conditions, and across `UNION`/`EXCEPT`/`INTERSECT` boundaries into a single ordered `params` list.
+
+```python
+from pysqlscribe.cte import with_
+from pysqlscribe.table import Table
+
+employees = Table("employees", "name", "salary", dialect="postgres")
+high_earners = employees.select("name").where(employees.salary > 100000)
+
+sql, params = (
+    with_("HighEarners", dialect="postgres")
+    .as_(high_earners)
+    .select("*")
+    .from_("HighEarners")
+    .where(employees.salary < 500000)
+    .build(parameterize=True)
+)
+```
+
+Output:
+
+```python
+sql    # 'WITH HighEarners AS (SELECT "name" FROM "employees" WHERE employees.salary > %s) SELECT * FROM "HighEarners" WHERE employees.salary < %s'
+params # [100000, 500000]
+```
+
+Params are appended in the order their placeholders appear in the rendered SQL, even across CTE, subquery, and combine-op boundaries — so a single ordered `params` list always lines up with the placeholders in the SQL string.
+
+### Caveats
+
+- **Raw-string conditions are not parameterized.** When you pass a string directly to `where()` (e.g., `.where("salary > 1000")`), the literal stays inlined. Only typed comparisons through `Column` objects (e.g., `table.salary > 1000`) flow into the param list. A `bind()` opt-in helper for raw-string conditions is planned.
+- **Type support follows your driver, not the library.** The default (inline) build path supports `str`, `int`, `float`, and `None`. The parameterized path accepts any value your DB driver can bind — `datetime`, `date`, `Decimal`, `bool`, etc. all work without escaping logic on our side.
+- **`IS NULL` does not bind.** `col.is_null()` always renders as `IS NULL`, never as a placeholder, since drivers don't accept `NULL` via parameter binding for null-checks.
+
+### Using a different driver / placeholder format
+
+The `%s` and `?` defaults match DB-API 2.0 driver conventions, but if you're using a driver that expects a different placeholder format (e.g., asyncpg uses `$N`), register a thin dialect subclass:
+
+```python
+from pysqlscribe.dialects.base import DialectRegistry
+from pysqlscribe.dialects.postgres import PostgreSQLDialect
+
+
+@DialectRegistry.register("postgres-asyncpg")
+class AsyncpgPostgresDialect(PostgreSQLDialect):
+    def make_placeholder(self, index: int) -> str:
+        return f"${index}"
+```
+
+Then `Query("postgres-asyncpg")` (or `Table(..., dialect="postgres-asyncpg")`) emits `$1, $2, ...` while the rest of the SQL generation is inherited unchanged.
+
 ## Escaping Identifiers
 By default, all identifiers are escaped using the corresponding dialect's escape character, as can be seen in various examples. This is done to prevent SQL injection attacks and to ensure we handle different column name variations (e.g; a column with a space in the name, a column name which coincides with a keyword). Admittedly, this also makes the queries less aesthetic. If you want to disable this behavior, you can use the `disable_escape_identifiers` method:
 
@@ -565,7 +638,7 @@ This is anticipated to grow, also there are certainly operations that are missin
 
 # TODO
 - [ ] Potentially incorporate per-dialect scalar functions, as there are functions which are only available in particular dialects (or semantics across dialects slightly differ)
-- [ ] Add a parameterized query building capability
+- [ ] Add `bind()` helper to opt raw-string `where()` conditions into the parameterized build path
 - [ ] Add more dialects
 
 > 💡 Interested in contributing? Check out the [Local Development & Contributions Guide](https://github.com/danielenricocahall/pysqlscribe/blob/main/CONTRIBUTING.md).

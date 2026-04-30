@@ -87,5 +87,5 @@ class Table(Query, AliasMixin):
             f"{self.__class__.__name__}(name={self.table_name}, columns={self.columns})"
         )
 
-    def _identifier_body(self, dialect) -> str:
+    def _identifier_body(self, dialect, collector=None) -> str:
         return dialect.escape_identifier(self.table_name)

@@ -40,6 +40,10 @@ class Dialect(ABC):
     @abstractmethod
     def make_renderer(self) -> Renderer: ...
 
+    @abstractmethod
+    def make_placeholder(self, index: int) -> str:
+        """Return the placeholder text for the Nth (1-indexed) bound parameter."""
+
     def validate(self, current_node: Node, next_node: Node):
         valid_next = self.valid_node_transitions.get(type(current_node), ())
         if type(next_node) not in valid_next:
@@ -137,14 +141,14 @@ class Dialect(ABC):
             f"Unsupported value type for SQL literal: {type(value).__name__}"
         )
 
-    def normalize_identifiers_args(self, *args) -> str:
+    def normalize_identifiers_args(self, *args, collector=None) -> str:
         arg = args[0]
         if not isinstance(arg, (list, tuple)):
             arg = [arg]
         identifiers = []
         for identifier in arg:
             if hasattr(identifier, "to_identifier_sql"):
-                identifiers.append(identifier.to_identifier_sql(self))
+                identifiers.append(identifier.to_identifier_sql(self, collector))
             else:
                 identifiers.append(self.validate_identifier(str(identifier).strip()))
 
@@ -180,8 +184,8 @@ class Dialect(ABC):
     def escape_identifiers_enabled(self, value: bool):
         self.__escape_identifiers_enabled = value
 
-    def render(self, node: Node) -> str:
-        return self._renderer.render(node)
+    def render(self, node: Node, collector=None) -> str:
+        return self._renderer.render(node, collector)
 
 
 class DialectRegistry:
